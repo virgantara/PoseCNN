@@ -400,7 +400,7 @@ class PoseCNN(nn.Module):
 
 
 
-            gt_bbx = gt_bbx.to(torch.cuda.FloatTensor())
+            gt_bbx = gt_bbx.to(torch.float32)
             filter_bbx_R = IOUselection(d_bbx, gt_bbx, self.iou_threshold)
             if filter_bbx_R.shape[0] != 0:
                 quater =  self.RotationBranch(feat1, feat2, gt_bbx[:,0:5])

@@ -62,6 +62,8 @@ _iter = 0
 
 epochs = 3
 st_time = time.time()
+
+print("tqdm =", tqdm)
 for epoch in range(epochs):
     train_loss = []
     for batch in train_loader:
