@@ -249,7 +249,7 @@ def parse_args():
     return parser.parse_args()
 
 if __name__ == "__main__":
-    reset_seed(args.seed)
+    
     args = parse_args()
     _init_()
 
@@ -258,6 +258,8 @@ if __name__ == "__main__":
     io = IOStream('checkpoints/' + args.exp_name + '/run.log')
     io.cprint(str(args))
 
+    reset_seed(args.seed)
+    
     if args.eval:
         inference(args, device)
     else:
