@@ -434,7 +434,7 @@ class PoseCNN(nn.Module):
                 trans_i = self.TranslationBranch(feat1, feat2)
 
 
-                bb_xs = bb_xs.to(torch.cuda.FloatTensor())
+                bb_xs = bb_xs.to(torch.float32)
                 quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
                 pred__R, _ = self.estimateRotation(quater , bb_xs)
 
