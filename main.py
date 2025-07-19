@@ -126,72 +126,60 @@ def main(args, io):
     plt.plot(loss_history)
     plt.savefig("posecnn.png")
 
-
-
 def inference(args, device):
-    reset_seed(args.seed)
 
-    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='val')
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
+    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)  # use batch_size=1 for easier ADD matching
+
     vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
-    posecnn_model = PoseCNN(pretrained_backbone = vgg16, 
-                models_pcd = torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
-                cam_intrinsic = test_dataset.cam_intrinsic).to(device)
-    
+    posecnn_model = PoseCNN(
+        pretrained_backbone=vgg16,
+        models_pcd=torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
+        cam_intrinsic=test_dataset.cam_intrinsic
+    ).to(device)
+
     posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
     posecnn_model.eval()
-    
+
     add_scores = []
-    with torch.no_grad():
-        for batch in tqdm(test_loader, desc="Evaluating"):
-            for key in batch:
-                batch[key] = batch[key].to(device)
 
-            out_dict = posecnn_model(batch)
+    for batch in tqdm(test_loader, desc="Evaluating ADD"):
+        rgb = batch['rgb'].to(device)
+        input_dict = {'rgb': rgb}
+        pred_pose_dict, _ = posecnn_model(input_dict)
 
-            pred_quat = out_dict['quat'].cpu().numpy()   # (B, 4)
-            pred_trans = out_dict['trans'].cpu().numpy() # (B, 3)
-            gt_quat = batch['quat'].cpu().numpy()        # (B, 4)
-            gt_trans = batch['trans'].cpu().numpy()      # (B, 3)
-            model_points = batch['model_points'].cpu().numpy()  # (B, N, 3)
+        # Loop over detected objects
+        batch_id = 0  # since batch size = 1
+        if batch_id not in pred_pose_dict:
+            continue
 
-            B = pred_quat.shape[0]
-            for i in range(B):
-                R_pred = quaternion_to_rotation_matrix(pred_quat[i])
-                R_gt = quaternion_to_rotation_matrix(gt_quat[i])
-                t_pred = pred_trans[i]
-                t_gt = gt_trans[i]
-                pts = model_points[i]
+        for cls_id, pred_RT in pred_pose_dict[batch_id].items():
+            gt_RT = batch['RTs'][0][cls_id - 1].cpu().numpy()  # (4,4)
+            model_points = test_dataset.models_pcd[cls_id - 1]  # (N, 3)
 
-                add = compute_add(R_gt, t_gt, R_pred, t_pred, pts)
-                add_scores.append(add)
+            R_gt = gt_RT[:3, :3]
+            t_gt = gt_RT[:3, 3]
+            R_pred = pred_RT[:3, :3]
+            t_pred = pred_RT[:3, 3]
 
-    mean_add = np.mean(add_scores)
-    print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+            add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
+            add_scores.append(add)
 
-    # Visualization
-    num_samples = min(5, len(test_loader))
+    if len(add_scores) > 0:
+        mean_add = np.mean(add_scores)
+        print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+    else:
+        print("\n No valid predictions to compute ADD.")
+
+    # --- Optional Visualization ---
+    num_samples = 5
     fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
     for i in range(num_samples):
-        sample = next(iter(test_loader))
-        for key in sample:
-            sample[key] = sample[key].to(device)
-        out = posecnn_model(sample)
-        axs[i].imshow(sample['img'][0].cpu().permute(1, 2, 0))  # assuming input image is in [B, C, H, W]
+        out = eval(posecnn_model, test_loader, device)
+        axs[i].imshow(out)
         axs[i].axis('off')
         axs[i].set_title(f'Sample {i+1}')
     plt.tight_layout()
-    # num_samples = 5
-    # fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
-
-    # for i in range(num_samples):
-    #     out = eval(posecnn_model, test_loader, device)
-
-    #     axs[i].imshow(out)
-    #     axs[i].axis('off')
-    #     axs[i].set_title(f'Sample {i+1}')
-
-    # plt.tight_layout()
     plt.show()
 
 
