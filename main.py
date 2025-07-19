@@ -174,8 +174,8 @@ def inference(args, device):
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
     vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
     posecnn_model = PoseCNN(pretrained_backbone = vgg16, 
-                models_pcd = torch.tensor(val_dataset.models_pcd).to(device, dtype=torch.float32),
-                cam_intrinsic = val_dataset.cam_intrinsic).to(device)
+                models_pcd = torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
+                cam_intrinsic = test_dataset.cam_intrinsic).to(device)
     
     posecnn_model.load_state_dict(
         torch.load(args.model_path)
