@@ -1,25 +1,21 @@
 import open3d as o3d
 import numpy as np
 
-def refine_pose_with_icp(model_points, depth_points, init_pose, threshold=0.02, max_iter=50):
-    """
-    Refines pose using ICP between model points and observed depth points.
-    """
-    # Convert to Open3D PointClouds
-    source = o3d.geometry.PointCloud()
-    target = o3d.geometry.PointCloud()
-    source.points = o3d.utility.Vector3dVector(model_points)
-    target.points = o3d.utility.Vector3dVector(depth_points)
-
-    # Apply initial transform
-    source.transform(init_pose)
+def refine_pose_with_icp(src_points, tgt_points, init_pose=np.eye(4), threshold=0.02, max_iter=50):
+    # Convert to Open3D point cloud
+    src_pcd = o3d.geometry.PointCloud()
+    tgt_pcd = o3d.geometry.PointCloud()
+    src_pcd.points = o3d.utility.Vector3dVector(src_points)
+    tgt_pcd.points = o3d.utility.Vector3dVector(tgt_points)
 
     # ICP
     reg_p2p = o3d.pipelines.registration.registration_icp(
-        source, target, threshold,
-        np.identity(4),  # identity (initial was already applied above)
-        o3d.pipelines.registration.TransformationEstimationPointToPoint(),
-        o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter)
+        src=src_pcd,
+        target=tgt_pcd,
+        max_correspondence_distance=threshold,
+        init=init_pose,
+        estimation_method=o3d.pipelines.registration.TransformationEstimationPointToPoint(),
+        criteria=o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter)
     )
 
     return reg_p2p.transformation
