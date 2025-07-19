@@ -180,7 +180,7 @@ def inference(args, device):
 
     valid_adds_scores = [score for score in add_s_scores if not np.isnan(score)]
     if valid_adds_scores:
-        # print(add_scores)
+        print(add_s_scores)
         mean_adds = np.mean(valid_adds_scores)
         print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
     else:
