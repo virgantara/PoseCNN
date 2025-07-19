@@ -86,7 +86,7 @@ def main(args, io):
     st_time = time.time()
 
     posecnn_model.train()
-    for epoch in tqdm(range(epochs)):
+    for epoch in range(epochs):
         train_loss = []
         for batch in tqdm(train_loader, desc=f'Epoch {epoch+1} from {epochs}'):
             for item in batch:
