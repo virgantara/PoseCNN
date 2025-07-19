@@ -53,3 +53,35 @@ test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 optimizer = torch.optim.Adam(posecnn_model.parameters(), lr=0.001,
                                  betas=(0.9, 0.999))
+
+posecnn_model.train()
+
+loss_history = []
+log_period = 5
+_iter = 0
+
+st_time = time.time()
+for epoch in range(3):
+    train_loss = []
+    for batch in tqdm(dataloader):
+        for item in batch:
+            batch[item] = batch[item].to(DEVICE)
+        loss_dict = posecnn_model(batch)
+        optimizer.zero_grad()
+        total_loss = loss_dict["loss_segmentation"]
+        total_loss.backward()
+        optimizer.step()
+        train_loss.append(total_loss.item())
+    
+        if _iter % log_period == 0:
+            loss_history.append(total_loss.item())
+        _iter += 1
+    
+    print('Time {0}'.format(time.strftime("%Hh %Mm %Ss", time.gmtime(time.time() - st_time)) + \
+                                  ', ' + 'Epoch %02d' % epoch + ', ' + 'Training finished' + f' , with mean training loss {np.array(train_loss).mean()}'))
+    
+plt.title("Training loss history")
+plt.xlabel(f"Iteration (x {log_period})")
+plt.ylabel("Loss")
+plt.plot(loss_history)
+plt.show()
