@@ -187,8 +187,12 @@ def inference(args, device):
                 transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
 
                 # print("Before ICP ADD:", compute_add(R_gt, t_gt, R_pred, t_pred, model_points))
-                delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4), threshold=0.05)
+                delta_RT, fitness = refine_pose_with_icp(transformed_model, depth_points, np.eye(4), threshold=0.05)
                 # print("Delta RT from ICP:\n", delta_RT)
+                
+                if fitness < 0.1:
+                    continue
+                    
                 pred_RT = delta_RT @ pred_RT
                 R_pred = pred_RT[:3, :3]
                 t_pred = pred_RT[:3, 3]
