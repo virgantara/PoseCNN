@@ -166,6 +166,7 @@ def inference(args, device):
             add_scores.append(add)
 
     if len(add_scores) > 0:
+        print(add_scores)
         mean_add = np.mean(add_scores)
         print(f"\nMean ADD over test set: {mean_add:.4f} meters")
     else:
