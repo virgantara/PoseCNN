@@ -18,6 +18,7 @@ from p4_helper import *
 from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
+from metrics import compute_add, quaternion_to_rotation_matrix
 
 class IOStream():
     def __init__(self, path):
@@ -126,6 +127,74 @@ def main(args, io):
     plt.savefig("posecnn.png")
 
 
+
+def inference(args, device):
+    reset_seed(args.seed)
+
+    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='val')
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+    posecnn_model = PoseCNN(pretrained_backbone = vgg16, 
+                models_pcd = torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
+                cam_intrinsic = test_dataset.cam_intrinsic).to(device)
+    
+    posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
+    posecnn_model.eval()
+    
+    add_scores = []
+    with torch.no_grad():
+        for batch in tqdm(test_loader, desc="Evaluating"):
+            for key in batch:
+                batch[key] = batch[key].to(device)
+
+            out_dict = posecnn_model(batch)
+
+            pred_quat = out_dict['quat'].cpu().numpy()   # (B, 4)
+            pred_trans = out_dict['trans'].cpu().numpy() # (B, 3)
+            gt_quat = batch['quat'].cpu().numpy()        # (B, 4)
+            gt_trans = batch['trans'].cpu().numpy()      # (B, 3)
+            model_points = batch['model_points'].cpu().numpy()  # (B, N, 3)
+
+            B = pred_quat.shape[0]
+            for i in range(B):
+                R_pred = quaternion_to_rotation_matrix(pred_quat[i])
+                R_gt = quaternion_to_rotation_matrix(gt_quat[i])
+                t_pred = pred_trans[i]
+                t_gt = gt_trans[i]
+                pts = model_points[i]
+
+                add = compute_add(R_gt, t_gt, R_pred, t_pred, pts)
+                add_scores.append(add)
+
+    mean_add = np.mean(add_scores)
+    print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+
+    # Visualization
+    num_samples = min(5, len(test_loader))
+    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
+    for i in range(num_samples):
+        sample = next(iter(test_loader))
+        for key in sample:
+            sample[key] = sample[key].to(device)
+        out = posecnn_model(sample)
+        axs[i].imshow(sample['img'][0].cpu().permute(1, 2, 0))  # assuming input image is in [B, C, H, W]
+        axs[i].axis('off')
+        axs[i].set_title(f'Sample {i+1}')
+    plt.tight_layout()
+    # num_samples = 5
+    # fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
+
+    # for i in range(num_samples):
+    #     out = eval(posecnn_model, test_loader, device)
+
+    #     axs[i].imshow(out)
+    #     axs[i].axis('off')
+    #     axs[i].set_title(f'Sample {i+1}')
+
+    # plt.tight_layout()
+    plt.show()
+
+
 def parse_args():
     # Training settings
     parser = argparse.ArgumentParser(description='Pose CNN')
@@ -162,32 +231,6 @@ def parse_args():
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
     return parser.parse_args()
-
-def inference(args, device):
-    reset_seed(args.seed)
-
-    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='val')
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
-    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
-    posecnn_model = PoseCNN(pretrained_backbone = vgg16, 
-                models_pcd = torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
-                cam_intrinsic = test_dataset.cam_intrinsic).to(device)
-    
-    posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
-    
-    num_samples = 5
-    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
-
-    for i in range(num_samples):
-        out = eval(posecnn_model, test_loader, device)
-
-        axs[i].imshow(out)
-        axs[i].axis('off')
-        axs[i].set_title(f'Sample {i+1}')
-
-    plt.tight_layout()
-    plt.show()
-
 
 if __name__ == "__main__":
     args = parse_args()
