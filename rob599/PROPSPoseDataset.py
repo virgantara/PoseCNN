@@ -12,15 +12,11 @@ from torch.utils.data import Dataset
 from torchvision.datasets.utils import download_and_extract_archive
 
 from rob599 import Visualize, chromatic_transform, add_noise
-
+from tqdm import tqdm
 
 
 class PROPSPoseDataset(Dataset):
     
-    base_folder = "PROPS-Pose-Dataset"
-    url = "https://drive.google.com/file/d/15rhwXhzHGKtBcxJAYMWJG7gN7BLLhyAq/view?usp=share_link"
-    filename = "PROPS-Pose-Dataset.tar.gz"
-    tgz_md5 = "a0c39fe326377dacd1d652f9fe11a7f4"
     
     def __init__(
         self, 
@@ -32,10 +28,8 @@ class PROPSPoseDataset(Dataset):
         
         self.root = root
         self.split = split
-        self.dataset_dir = os.path.join(self.root, self.base_folder)
+        self.dataset_dir = os.path.join(self.root)
         
-        if download:
-            self.download()
             
             
 
@@ -72,56 +66,44 @@ class PROPSPoseDataset(Dataset):
             self.id2label[id] = idx + 1
 
     def parse_dir(self):
-      data_dir = os.path.join(self.dataset_dir, self.split)
-      rgb_path = os.path.join(data_dir, "rgb")
-      depth_path = os.path.join(data_dir, "depth")
-      mask_path = os.path.join(data_dir, "mask_visib")
-      scene_gt_json = os.path.join(data_dir, self.split+"_gt.json")
-      scene_gt_info_json = os.path.join(data_dir, self.split+"_gt_info.json")
-      rgb_list = os.listdir(rgb_path)
-      rgb_list.sort()
-      depth_list = os.listdir(depth_path)
-      depth_list.sort()
-      mask_list = os.listdir(mask_path)
-      mask_list.sort()
-      scene_gt = json.load(open(scene_gt_json))
-      scene_gt_info = json.load(open(scene_gt_info_json))
-      assert len(rgb_list) == len(depth_list) == len(scene_gt) == len(scene_gt_info), "data files number mismatching"
-      all_lst = []
-      for rgb_file in rgb_list:
-          idx = int(rgb_file.split(".png")[0])
-          depth_file = f"{idx:06d}.png"
-          scene_objs_gt = scene_gt[str(idx)]
-          scene_objs_info_gt = scene_gt_info[str(idx)]
-          objs_dict = {}
-          for obj_idx in range(len(scene_objs_gt)):
-              objs_dict[obj_idx] = {}
-              objs_dict[obj_idx]['R'] = np.array(scene_objs_gt[obj_idx]['cam_R_m2c']).reshape(3, 3)
-              objs_dict[obj_idx]['T'] = np.array(scene_objs_gt[obj_idx]['cam_t_m2c']).reshape(3, 1)
-              objs_dict[obj_idx]['obj_id'] = scene_objs_gt[obj_idx]['obj_id']
-              objs_dict[obj_idx]['bbox_visib'] = scene_objs_info_gt[obj_idx]['bbox_visib']
-              assert f"{idx:006d}_{obj_idx:06d}.png" in mask_list
-              objs_dict[obj_idx]['visible_mask_path'] = os.path.join(mask_path, f"{idx:006d}_{obj_idx:06d}.png")
-          """
-          obj_sample = (rgb_path, depth_path, objs_dict)
-          objs_dict = {
-              0: {
-                  cam_R_m2c:
-                  cam_t_m2c:
-                  obj_id:
-                  bbox_visib:
-                  visiable_mask_path:
-              }
-              ...
-          }
-          """
-          obj_sample = (
-              os.path.join(rgb_path, rgb_file),
-              os.path.join(depth_path, depth_file),
-              objs_dict
-          )
-          all_lst.append(obj_sample)
-      return all_lst
+        data_dir = os.path.join(self.dataset_dir, self.split)
+        rgb_path = os.path.join(data_dir, "rgb")
+        depth_path = os.path.join(data_dir, "depth")
+        mask_path = os.path.join(data_dir, "mask_visib")
+        scene_gt_json = os.path.join(data_dir, self.split+"_gt.json")
+        scene_gt_info_json = os.path.join(data_dir, self.split+"_gt_info.json")
+        rgb_list = os.listdir(rgb_path)
+        rgb_list.sort()
+        depth_list = os.listdir(depth_path)
+        depth_list.sort()
+        mask_list = os.listdir(mask_path)
+        mask_list.sort()
+        scene_gt = json.load(open(scene_gt_json))
+        scene_gt_info = json.load(open(scene_gt_info_json))
+        assert len(rgb_list) == len(depth_list) == len(scene_gt) == len(scene_gt_info), "data files number mismatching"
+        all_lst = []
+        for rgb_file in tqdm(rgb_list):
+            idx = int(rgb_file.split(".png")[0])
+            depth_file = f"{idx:06d}.png"
+            scene_objs_gt = scene_gt[str(idx)]
+            scene_objs_info_gt = scene_gt_info[str(idx)]
+            objs_dict = {}
+            for obj_idx in tqdm(range(len(scene_objs_gt))):
+                objs_dict[obj_idx] = {}
+                objs_dict[obj_idx]['R'] = np.array(scene_objs_gt[obj_idx]['cam_R_m2c']).reshape(3, 3)
+                objs_dict[obj_idx]['T'] = np.array(scene_objs_gt[obj_idx]['cam_t_m2c']).reshape(3, 1)
+                objs_dict[obj_idx]['obj_id'] = scene_objs_gt[obj_idx]['obj_id']
+                objs_dict[obj_idx]['bbox_visib'] = scene_objs_info_gt[obj_idx]['bbox_visib']
+                assert f"{idx:006d}_{obj_idx:06d}.png" in mask_list
+                objs_dict[obj_idx]['visible_mask_path'] = os.path.join(mask_path, f"{idx:006d}_{obj_idx:06d}.png")
+            
+            obj_sample = (
+                os.path.join(rgb_path, rgb_file),
+                os.path.join(depth_path, depth_file),
+                objs_dict
+            )
+            all_lst.append(obj_sample)
+        return all_lst
 
     def parse_model(self):
         model_path = os.path.join(self.dataset_dir, "model")

@@ -1,0 +1,8 @@
+torchvision
+torch
+matplotlib
+numpy
+opencv-python
+tqdm
+trimesh
+pyrender
