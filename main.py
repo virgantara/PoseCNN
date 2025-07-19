@@ -145,9 +145,10 @@ def inference(args, device):
     test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
     test_loader = DataLoader(test_dataset, batch_size=args.test_batch_size, shuffle=False)  # use batch_size=1 for easier ADD matching
 
-    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+    backbone_name = args.backbone_name
+    backbone_model = get_backbone(backbone_name)
     posecnn_model = PoseCNN(
-        pretrained_backbone=vgg16,
+        pretrained_backbone=backbone_model,
         models_pcd=torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
         cam_intrinsic=test_dataset.cam_intrinsic
     ).to(device)
