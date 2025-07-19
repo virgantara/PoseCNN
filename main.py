@@ -169,7 +169,7 @@ def inference(args, device):
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
             add_s_scores.append(adds)
 
-    valid_add_scores = [score for score in add_scores if not np.isnan(score)]
+    valid_add_scores = [score for score in add_scores if not np.isnan(score) and not np.isinf(score)]
     if valid_add_scores:
         # print(add_scores)
         mean_add = np.mean(valid_add_scores)
@@ -178,9 +178,9 @@ def inference(args, device):
         print("\n No valid predictions to compute ADD.")
 
 
-    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score)]
+    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score) and not np.isinf(score)]
     if valid_adds_scores:
-        print(add_s_scores)
+        # print(add_s_scores)
         mean_adds = np.mean(valid_adds_scores)
         print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
     else:
