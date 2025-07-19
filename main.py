@@ -237,12 +237,15 @@ def eval_icp(args, device):
 
                 # Run ICP
                 pred_RT_icp = refine_pose_with_icp(model_points, depth_points, pred_RT)
-                pred_RT = pred_RT_icp
-
-            R_gt = gt_RT[:3, :3]
-            t_gt = gt_RT[:3, 3]
-            R_pred = pred_RT[:3, :3]
-            t_pred = pred_RT[:3, 3]
+                R_gt = gt_RT[:3, :3]
+                t_gt = gt_RT[:3, 3]
+                R_pred = pred_RT_icp[:3, :3]
+                t_pred = pred_RT_icp[:3, 3]
+            else:
+                R_gt = gt_RT[:3, :3]
+                t_gt = gt_RT[:3, 3]
+                R_pred = pred_RT[:3, :3]
+                t_pred = pred_RT[:3, 3]
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             add_scores.append(add)
