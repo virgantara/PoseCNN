@@ -185,7 +185,7 @@ def inference(args, device):
     fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
 
     for i in range(num_samples):
-        out = eval(posecnn_model, dataloader, device)
+        out = eval(posecnn_model, test_loader, device)
 
         axs[i].imshow(out)
         axs[i].axis('off')
