@@ -19,4 +19,6 @@ def refine_pose_with_icp(src_points, tgt_points, init_pose=np.eye(4), threshold=
         criteria=o3d.pipelines.registration.ICPConvergenceCriteria(max_iteration=max_iter)
     )
 
+    print(f"ICP fitness: {reg_p2p.fitness:.4f}, RMSE: {reg_p2p.inlier_rmse:.4f}")
+
     return reg_p2p.transformation
