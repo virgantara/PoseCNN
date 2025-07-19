@@ -25,3 +25,4 @@ def compute_adds(R_gt, t_gt, R_pred, t_pred, model_points):
     tree = cKDTree(pts_pred)
     distances, _ = tree.query(pts_gt, k=1)  # Closest point distance
     return np.mean(distances)
+

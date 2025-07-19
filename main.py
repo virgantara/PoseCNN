@@ -19,6 +19,7 @@ from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
 from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds
+from icp import refine_pose_with_icp
 
 class IOStream():
     def __init__(self, path):
@@ -198,6 +199,86 @@ def inference(args, device):
     plt.show()
 
 
+def eval_icp(args, device):
+
+    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)  # use batch_size=1 for easier ADD matching
+
+    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+    posecnn_model = PoseCNN(
+        pretrained_backbone=vgg16,
+        models_pcd=torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
+        cam_intrinsic=test_dataset.cam_intrinsic
+    ).to(device)
+
+    posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
+    posecnn_model.eval()
+
+    add_scores = []
+    add_s_scores = []
+
+    for batch in tqdm(test_loader, desc="Evaluating ADD"):
+        rgb = batch['rgb'].to(device)
+        input_dict = {'rgb': rgb}
+        pred_pose_dict, _ = posecnn_model(input_dict)
+
+        # Loop over detected objects
+        batch_id = 0  # since batch size = 1
+        if batch_id not in pred_pose_dict:
+            continue
+
+        for cls_id, pred_RT in pred_pose_dict[batch_id].items():
+            gt_RT = batch['RTs'][0][cls_id - 1].cpu().numpy()  # (4,4)
+            model_points = test_dataset.models_pcd[cls_id - 1]  # (N, 3)
+
+            ## ICP Evaluation
+            if args.icp:
+                depth_points = (gt_RT[:3, :3] @ model_points.T).T + gt_RT[:3, 3]  # shape (N, 3)
+
+                # Run ICP
+                pred_RT_icp = refine_pose_with_icp(model_points, depth_points, pred_RT)
+                pred_RT = pred_RT_icp
+
+            R_gt = gt_RT[:3, :3]
+            t_gt = gt_RT[:3, 3]
+            R_pred = pred_RT[:3, :3]
+            t_pred = pred_RT[:3, 3]
+
+            add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
+            add_scores.append(add)
+
+            adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
+            add_s_scores.append(adds)
+
+    valid_add_scores = [score for score in add_scores if not np.isnan(score) and not np.isinf(score)]
+    if valid_add_scores:
+        # print(add_scores)
+        mean_add = np.mean(valid_add_scores)
+        print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+    else:
+        print("\n No valid predictions to compute ADD.")
+
+
+    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score) and not np.isinf(score)]
+    if valid_adds_scores:
+        # print(add_s_scores)
+        mean_adds = np.mean(valid_adds_scores)
+        print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
+    else:
+        print("\n No valid predictions to compute ADD.")
+
+    # --- Optional Visualization ---
+    num_samples = 5
+    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
+    for i in range(num_samples):
+        out = eval(posecnn_model, test_loader, device)
+        axs[i].imshow(out)
+        axs[i].axis('off')
+        axs[i].set_title(f'Sample {i+1}')
+    plt.tight_layout()
+    plt.show()
+
+
 def parse_args():
     # Training settings
     parser = argparse.ArgumentParser(description='Pose CNN')
@@ -228,6 +309,8 @@ def parse_args():
                         help='random seed (default: 1)')
     parser.add_argument('--eval', type=bool, default=False,
                         help='evaluate the model')
+    parser.add_argument('--icp', type=bool, default=False,
+                        help='refine with ICP')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
     parser.add_argument('--resume', action="store_true", help='resume from checkpoint')

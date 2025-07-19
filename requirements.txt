@@ -7,3 +7,4 @@ tqdm
 trimesh
 pyrender
 pyquaternion
+open3d
