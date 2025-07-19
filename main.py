@@ -43,7 +43,6 @@ def _init_():
 
 def main(args, io):
 
-    reset_seed(args.seed)
 
     # for plotting
     plt.rcParams["figure.figsize"] = (10.0, 8.0)  # set default size of plots
@@ -128,79 +127,7 @@ def main(args, io):
     plt.savefig("posecnn.png")
 
 def inference(args, device):
-
-    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
-    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)  # use batch_size=1 for easier ADD matching
-
-    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
-    posecnn_model = PoseCNN(
-        pretrained_backbone=vgg16,
-        models_pcd=torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
-        cam_intrinsic=test_dataset.cam_intrinsic
-    ).to(device)
-
-    posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
-    posecnn_model.eval()
-
-    add_scores = []
-    add_s_scores = []
-
-    for batch in tqdm(test_loader, desc="Evaluating ADD"):
-        rgb = batch['rgb'].to(device)
-        input_dict = {'rgb': rgb}
-        pred_pose_dict, _ = posecnn_model(input_dict)
-
-        # Loop over detected objects
-        batch_id = 0  # since batch size = 1
-        if batch_id not in pred_pose_dict:
-            continue
-
-        for cls_id, pred_RT in pred_pose_dict[batch_id].items():
-            gt_RT = batch['RTs'][0][cls_id - 1].cpu().numpy()  # (4,4)
-            model_points = test_dataset.models_pcd[cls_id - 1]  # (N, 3)
-
-            R_gt = gt_RT[:3, :3]
-            t_gt = gt_RT[:3, 3]
-            R_pred = pred_RT[:3, :3]
-            t_pred = pred_RT[:3, 3]
-
-            add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
-            add_scores.append(add)
-
-            adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
-            add_s_scores.append(adds)
-
-    valid_add_scores = [score for score in add_scores if not np.isnan(score) and not np.isinf(score)]
-    if valid_add_scores:
-        # print(add_scores)
-        mean_add = np.mean(valid_add_scores)
-        print(f"\nMean ADD over test set: {mean_add:.4f} meters")
-    else:
-        print("\n No valid predictions to compute ADD.")
-
-
-    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score) and not np.isinf(score)]
-    if valid_adds_scores:
-        # print(add_s_scores)
-        mean_adds = np.mean(valid_adds_scores)
-        print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
-    else:
-        print("\n No valid predictions to compute ADD.")
-
-    # --- Optional Visualization ---
-    num_samples = 5
-    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
-    for i in range(num_samples):
-        out = eval(posecnn_model, test_loader, device)
-        axs[i].imshow(out)
-        axs[i].axis('off')
-        axs[i].set_title(f'Sample {i+1}')
-    plt.tight_layout()
-    plt.show()
-
-
-def eval_icp(args, device):
-
+    
     test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)  # use batch_size=1 for easier ADD matching
 
@@ -322,6 +249,7 @@ def parse_args():
     return parser.parse_args()
 
 if __name__ == "__main__":
+    reset_seed(args.seed)
     args = parse_args()
     _init_()
 
@@ -329,8 +257,6 @@ if __name__ == "__main__":
 
     io = IOStream('checkpoints/' + args.exp_name + '/run.log')
     io.cprint(str(args))
-
-    torch.manual_seed(args.seed)
 
     if args.eval:
         inference(args, device)
