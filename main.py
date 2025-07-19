@@ -177,10 +177,8 @@ def inference(args, device):
                 models_pcd = torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),
                 cam_intrinsic = test_dataset.cam_intrinsic).to(device)
     
-    posecnn_model.load_state_dict(
-        torch.load(args.model_path)
-    )
-
+    posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
+    
     num_samples = 5
     fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
 
