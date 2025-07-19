@@ -21,6 +21,19 @@ from rob599.PROPSPoseDataset import PROPSPoseDataset
 from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds, compute_auc
 from icp import refine_pose_with_icp
 
+def get_backbone(name: str):
+    name = name.lower()
+    if name == "vgg16":
+        return models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+    elif name == "resnet18":
+        return models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
+    elif name == "resnet50":
+        return models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+    elif name == "efficientnet":
+        return models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+    else:
+        raise ValueError(f"Unsupported backbone: {name}")
+
 class IOStream():
     def __init__(self, path):
         self.f = open(path, 'a')
@@ -65,9 +78,10 @@ def main(args, io):
     train_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='train')
     test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='val')
 
-
-    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
-    posecnn_model = PoseCNN(pretrained_backbone = vgg16,
+    backbone_name = args.backbone_name
+    backbone_model = get_backbone(backbone_name)
+    
+    posecnn_model = PoseCNN(pretrained_backbone = backbone_model,
                            models_pcd = torch.tensor(train_dataset.models_pcd).to(DEVICE, dtype=torch.float32),
                            cam_intrinsic = train_dataset.cam_intrinsic).to(DEVICE)
 
@@ -255,6 +269,9 @@ def parse_args():
     parser.add_argument('--model', type=str, default='posecnn', metavar='N',
                         choices=['posecnn'],
                         help='Model to use, [posecnn]')
+    parser.add_argument('--backbone_name', type=str, default='vgg16', metavar='N',
+                        choices=['vgg16','resnet18','resnet50','efficientnet'],
+                        help='Model to use, [resnet18]')
     parser.add_argument('--dataset_name', type=str, default='propspose', metavar='N',
                         choices=['propspose', 'ycb'],
                         help='Dataset name to test, [modelnet40svm, scanobjectnnsvm]')
