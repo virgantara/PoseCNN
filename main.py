@@ -156,10 +156,6 @@ def parse_args():
                         help='random seed (default: 1)')
     parser.add_argument('--eval', type=bool, default=False,
                         help='evaluate the model')
-    parser.add_argument('--num_points', type=int, default=2048,
-                        help='num of points to use')
-    parser.add_argument('--dropout', type=float, default=0.5,
-                        help='dropout rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
     parser.add_argument('--resume', action="store_true", help='resume from checkpoint')
