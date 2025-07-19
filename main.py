@@ -170,7 +170,7 @@ def inference(args, device):
             ## ICP Evaluation
             if args.icp:
                 # Get real depth points for the object
-                depth = batch['depth'][0][0].cpu().numpy()  # shape: (H, W)
+                depth = batch['depth'][0][0].cpu().numpy() / 1000.0 # shape: (H, W)
                 mask = batch['label'][0][cls_id].cpu().numpy().astype(bool)
 
                 ys, xs = np.where(mask & (depth > 0))
