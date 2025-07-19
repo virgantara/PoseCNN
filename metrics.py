@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as R
+from scipy.spatial import cKDTree
 
 def quaternion_to_rotation_matrix(q):
     x, y, z, w = q
@@ -13,3 +14,14 @@ def compute_add(R_gt, t_gt, R_pred, t_pred, model_points):
     pts_gt = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
     pts_pred = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
     return np.mean(np.linalg.norm(pts_gt - pts_pred, axis=1))
+
+def compute_adds(R_gt, t_gt, R_pred, t_pred, model_points):
+    """
+    ADD-S: Average Distance for symmetric objects
+    """
+    pts_gt = (R_gt @ model_points.T).T + t_gt.reshape(1, 3)
+    pts_pred = (R_pred @ model_points.T).T + t_pred.reshape(1, 3)
+
+    tree = cKDTree(pts_pred)
+    distances, _ = tree.query(pts_gt, k=1)  # Closest point distance
+    return np.mean(distances)

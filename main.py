@@ -18,7 +18,7 @@ from p4_helper import *
 from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
-from metrics import compute_add, quaternion_to_rotation_matrix
+from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds
 
 class IOStream():
     def __init__(self, path):
@@ -142,6 +142,7 @@ def inference(args, device):
     posecnn_model.eval()
 
     add_scores = []
+    add_s_scores = []
 
     for batch in tqdm(test_loader, desc="Evaluating ADD"):
         rgb = batch['rgb'].to(device)
@@ -165,11 +166,23 @@ def inference(args, device):
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             add_scores.append(add)
 
+            adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
+            add_s_scores.append(adds)
+
     valid_add_scores = [score for score in add_scores if not np.isnan(score)]
     if valid_add_scores:
         # print(add_scores)
         mean_add = np.mean(valid_add_scores)
         print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+    else:
+        print("\n No valid predictions to compute ADD.")
+
+
+    valid_adds_scores = [score for score in adds_scores if not np.isnan(score)]
+    if valid_adds_scores:
+        # print(add_scores)
+        mean_adds = np.mean(valid_adds_scores)
+        print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
     else:
         print("\n No valid predictions to compute ADD.")
 
