@@ -165,8 +165,9 @@ def inference(args, device):
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             add_scores.append(add)
 
-    if len(add_scores) > 0:
-        print(add_scores)
+    valid_add_scores = [score for score in add_scores if not np.isnan(score)]
+    if valid_add_scores:
+        
         mean_add = np.mean(add_scores)
         print(f"\nMean ADD over test set: {mean_add:.4f} meters")
     else:
