@@ -441,7 +441,8 @@ class PoseCNN(nn.Module):
 
                 pred_centers, pred_depths = HoughVoting(segmentation, trans_i, num_classes=10)
 
-                bb_xs = bb_xs.to(torch.cuda.LongTensor())
+                bb_xs = bb_xs.to(device=bb_xs.device, dtype=torch.long)
+                # bb_xs = bb_xs.to(torch.cuda.LongTensor())
 
 
                 output_dict = self.generate_pose(pred__R , pred_centers, pred_depths, bb_xs)
