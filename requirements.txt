@@ -6,3 +6,4 @@ opencv-python
 tqdm
 trimesh
 pyrender
+pyquaternion

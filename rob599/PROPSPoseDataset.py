@@ -88,7 +88,7 @@ class PROPSPoseDataset(Dataset):
             scene_objs_gt = scene_gt[str(idx)]
             scene_objs_info_gt = scene_gt_info[str(idx)]
             objs_dict = {}
-            for obj_idx in tqdm(range(len(scene_objs_gt))):
+            for obj_idx in range(len(scene_objs_gt)):
                 objs_dict[obj_idx] = {}
                 objs_dict[obj_idx]['R'] = np.array(scene_objs_gt[obj_idx]['cam_R_m2c']).reshape(3, 3)
                 objs_dict[obj_idx]['T'] = np.array(scene_objs_gt[obj_idx]['cam_t_m2c']).reshape(3, 1)
