@@ -129,7 +129,7 @@ def main(args, io):
 def inference(args, device):
 
     test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset', split='val')
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)  # use batch_size=1 for easier ADD matching
+    test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)  # use batch_size=1 for easier ADD matching
 
     vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
     posecnn_model = PoseCNN(
