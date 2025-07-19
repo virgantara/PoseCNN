@@ -65,7 +65,7 @@ st_time = time.time()
 
 for epoch in tqdm(range(epochs)):
     train_loss = []
-    for batch in tqdm(train_loader, desc=f'Epoch {epoch} from {epochs}'):
+    for batch in tqdm(train_loader, desc=f'Epoch {epoch+1} from {epochs}'):
         for item in batch:
             batch[item] = batch[item].to(DEVICE)
         loss_dict = posecnn_model(batch)
