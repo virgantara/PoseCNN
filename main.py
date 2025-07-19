@@ -134,8 +134,8 @@ def parse_args():
     parser.add_argument('--model', type=str, default='posecnn', metavar='N',
                         choices=['posecnn'],
                         help='Model to use, [posecnn]')
-    parser.add_argument('--dataset_name', type=str, default='modelnet40svm', metavar='N',
-                        choices=['modelnet40svm', 'scanobjectnnsvm'],
+    parser.add_argument('--dataset_name', type=str, default='propspose', metavar='N',
+                        choices=['propspose', 'ycb'],
                         help='Dataset name to test, [modelnet40svm, scanobjectnnsvm]')
     parser.add_argument('--batch_size', type=int, default=32, metavar='batch_size',
                         help='Size of batch)')
@@ -162,10 +162,6 @@ def parse_args():
                         help='dropout rate')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
-    parser.add_argument('--emb_dims', type=int, default=1024, metavar='N',
-                        help='Dimension of embeddings')
-    parser.add_argument('--k', type=int, default=20, metavar='N',
-                        help='Num of nearest neighbors to use')
     parser.add_argument('--resume', action="store_true", help='resume from checkpoint')
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
