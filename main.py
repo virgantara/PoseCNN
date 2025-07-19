@@ -138,7 +138,7 @@ def main(args, io):
     plt.xlabel(f"Iteration (x {log_period})")
     plt.ylabel("Loss")
     plt.plot(loss_history)
-    plt.savefig("posecnn.png")
+    plt.savefig("loss_curve_"+args.exp_name+".png")
 
 def inference(args, device):
     
