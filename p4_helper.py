@@ -9,7 +9,6 @@ import cv2
 from PIL import Image
 import trimesh
 import pyrender
-import tqdm
 
 _HOUGHVOTING_NUM_INLIER = 100
 _HOUGHVOTING_DIRECTION_INLIER = 0.9

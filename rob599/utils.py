@@ -11,7 +11,6 @@ from torchvision.ops import box_iou
 import sys, os
 import trimesh
 import pyrender
-import tqdm
 
 """
 General utilities to help with implementation
