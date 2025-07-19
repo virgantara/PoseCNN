@@ -184,9 +184,16 @@ def inference(args, device):
                 depth_points = np.stack((xs_real, ys_real, zs), axis=-1)
 
                 # Refine predicted pose
-                pred_RT_icp = refine_pose_with_icp(model_points, depth_points, pred_RT)
-                R_pred = pred_RT_icp[:3, :3]
-                t_pred = pred_RT_icp[:3, 3]
+                transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
+
+                # Step 2: run ICP from transformed_model to depth_points
+                delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4))  # refine from identity
+
+                # Step 3: apply refinement to original prediction
+                pred_RT = delta_RT @ pred_RT  # update predicted pose
+
+                R_pred = pred_RT[:3, :3]
+                t_pred = pred_RT[:3, 3]
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
