@@ -209,16 +209,18 @@ def inference(args, device):
     else:
         print("\n No valid predictions to compute ADD.")
 
+
     # --- Optional Visualization ---
-    num_samples = 5
-    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
-    for i in range(num_samples):
-        out = eval(posecnn_model, test_loader, device)
-        axs[i].imshow(out)
-        axs[i].axis('off')
-        axs[i].set_title(f'Sample {i+1}')
-    plt.tight_layout()
-    plt.show()
+    if args.visualize:
+        num_samples = 5
+        fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))
+        for i in range(num_samples):
+            out = eval(posecnn_model, test_loader, device)
+            axs[i].imshow(out)
+            axs[i].axis('off')
+            axs[i].set_title(f'Sample {i+1}')
+        plt.tight_layout()
+        plt.show()
 
 
 def parse_args():
@@ -252,6 +254,7 @@ def parse_args():
     parser.add_argument('--eval', type=bool, default=False,
                         help='evaluate the model')
     parser.add_argument('--icp', action='store_true', help='Refine with ICP')
+    parser.add_argument('--visualize', action='store_true', help='Visualization')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
     parser.add_argument('--resume', action="store_true", help='resume from checkpoint')
