@@ -172,7 +172,7 @@ def inference(args, device):
                 # Get real depth points for the object
                 depth = batch['depth'][0][0].cpu().numpy()  # shape: (H, W)
                 mask = batch['label'][0][cls_id].cpu().numpy().astype(bool)
-                
+
                 ys, xs = np.where(mask & (depth > 0))
 
                 if len(xs) < 20:
@@ -186,14 +186,21 @@ def inference(args, device):
                 # Refine predicted pose
                 transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
 
-                # Step 2: run ICP from transformed_model to depth_points
-                delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4))  # refine from identity
-
-                # Step 3: apply refinement to original prediction
-                pred_RT = delta_RT @ pred_RT  # update predicted pose
-
+                print("Before ICP ADD:", compute_add(R_gt, t_gt, R_pred, t_pred, model_points))
+                delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4))
+                print("Delta RT from ICP:\n", delta_RT)
+                pred_RT = delta_RT @ pred_RT
                 R_pred = pred_RT[:3, :3]
                 t_pred = pred_RT[:3, 3]
+                print("After ICP ADD:", compute_add(R_gt, t_gt, R_pred, t_pred, model_points))
+                # Step 2: run ICP from transformed_model to depth_points
+                # delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4))  # refine from identity
+
+                # # Step 3: apply refinement to original prediction
+                # pred_RT = delta_RT @ pred_RT  # update predicted pose
+
+                # R_pred = pred_RT[:3, :3]
+                # t_pred = pred_RT[:3, 3]
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
