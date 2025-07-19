@@ -12,7 +12,6 @@ from torch.utils.data import Dataset
 from torchvision.datasets.utils import download_and_extract_archive
 
 from rob599 import Visualize, chromatic_transform, add_noise
-from tqdm import tqdm
 
 
 class PROPSPoseDataset(Dataset):
@@ -82,7 +81,7 @@ class PROPSPoseDataset(Dataset):
         scene_gt_info = json.load(open(scene_gt_info_json))
         assert len(rgb_list) == len(depth_list) == len(scene_gt) == len(scene_gt_info), "data files number mismatching"
         all_lst = []
-        for rgb_file in tqdm(rgb_list):
+        for rgb_file in rgb_list:
             idx = int(rgb_file.split(".png")[0])
             depth_file = f"{idx:06d}.png"
             scene_objs_gt = scene_gt[str(idx)]
