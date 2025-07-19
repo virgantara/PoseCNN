@@ -60,10 +60,11 @@ loss_history = []
 log_period = 5
 _iter = 0
 
+epochs = 3
 st_time = time.time()
-for epoch in range(3):
+for epoch in range(epochs):
     train_loss = []
-    for batch in tqdm(dataloader):
+    for batch in tqdm(train_loader,desc=f"Epoch {epoch}/{epochs}"):
         for item in batch:
             batch[item] = batch[item].to(DEVICE)
         loss_dict = posecnn_model(batch)
