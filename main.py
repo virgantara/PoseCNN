@@ -11,7 +11,7 @@ from torch.utils.data import DataLoader
 
 import multiprocessing
 from pose_cnn import FeatureExtraction, SegmentationBranch
-from pose_cnn import PoseCNN
+from pose_cnn import PoseCNN, eval
 from tqdm import tqdm
 
 from p4_helper import *
@@ -166,6 +166,33 @@ def parse_args():
     parser.add_argument('--model_path', type=str, default='', metavar='N',
                         help='Pretrained model path')
     return parser.parse_args()
+
+def inference(args):
+    reset_seed(args.seed)
+
+    test_dataset = PROPSPoseDataset(root='dataset/PROPS-Pose-Dataset',split='val')
+    test_loader = DataLoader(test_dataset batch_size=args.batch_size, shuffle=False)
+    vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+    posecnn_model = PoseCNN(pretrained_backbone = vgg16, 
+                models_pcd = torch.tensor(val_dataset.models_pcd).to(DEVICE, dtype=torch.float32),
+                cam_intrinsic = val_dataset.cam_intrinsic).to(DEVICE)
+    
+    posecnn_model.load_state_dict(
+        torch.load(args.model_path)
+    )
+
+    num_samples = 5
+    fig, axs = plt.subplots(1, num_samples, figsize=(15, 5))  # 1 row, 5 columns
+
+    for i in range(num_samples):
+        out = eval(posecnn_model, dataloader, DEVICE)
+
+        axs[i].imshow(out)
+        axs[i].axis('off')
+        axs[i].set_title(f'Sample {i+1}')
+
+    plt.tight_layout()
+    plt.show()
 
 
 if __name__ == "__main__":
