@@ -239,8 +239,7 @@ def parse_args():
                         help='random seed (default: 1)')
     parser.add_argument('--eval', type=bool, default=False,
                         help='evaluate the model')
-    parser.add_argument('--icp', type=bool, default=False,
-                        help='refine with ICP')
+    parser.add_argument('--icp', action='store_true', help='Refine with ICP')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
     parser.add_argument('--resume', action="store_true", help='resume from checkpoint')
