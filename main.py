@@ -178,7 +178,7 @@ def inference(args, device):
         print("\n No valid predictions to compute ADD.")
 
 
-    valid_adds_scores = [score for score in adds_scores if not np.isnan(score)]
+    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score)]
     if valid_adds_scores:
         # print(add_scores)
         mean_adds = np.mean(valid_adds_scores)
