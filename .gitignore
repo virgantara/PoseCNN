@@ -2,3 +2,4 @@ dataset/**
 __pycache__/**
 rob599/__pycache__/**
 rob599/__pycache__
+*.pth
