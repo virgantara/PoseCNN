@@ -167,8 +167,8 @@ def inference(args, device):
 
     valid_add_scores = [score for score in add_scores if not np.isnan(score)]
     if valid_add_scores:
-        print(add_scores)
-        mean_add = np.mean(add_scores)
+        # print(add_scores)
+        mean_add = np.mean(valid_add_scores)
         print(f"\nMean ADD over test set: {mean_add:.4f} meters")
     else:
         print("\n No valid predictions to compute ADD.")
