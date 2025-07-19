@@ -18,7 +18,7 @@ from p4_helper import *
 from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
-from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds
+from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds, compute_auc
 from icp import refine_pose_with_icp
 
 class IOStream():
@@ -192,7 +192,7 @@ def inference(args, device):
                 
                 if fitness < 0.1:
                     continue
-                    
+
                 pred_RT = delta_RT @ pred_RT
                 R_pred = pred_RT[:3, :3]
                 t_pred = pred_RT[:3, 3]
@@ -217,14 +217,19 @@ def inference(args, device):
     if valid_add_scores:
         # print(add_scores)
         mean_add = np.mean(valid_add_scores)
+        auc_add = compute_auc(valid_add_scores)
+
         print(f"\nMean ADD over test set: {mean_add:.4f} meters")
+        print(f"AUC-ADD (0-10cm): {auc_add:.4f}")
     else:
         print("\n No valid predictions to compute ADD.")
 
     if valid_adds_scores:
         # print(add_s_scores)
         mean_adds = np.mean(valid_adds_scores)
+        auc_adds = compute_auc(valid_adds_scores)
         print(f"\nMean ADD-S over test set: {mean_adds:.4f} meters")
+        print(f"AUC-ADD-S (0-10cm): {auc_adds:.4f}")
     else:
         print("\n No valid predictions to compute ADD.")
 

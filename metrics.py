@@ -1,6 +1,23 @@
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from scipy.spatial import cKDTree
+from sklearn.metrics import auc
+
+def compute_auc(scores, thresholds=np.linspace(0, 0.1, 100)):
+    """
+    Compute the AUC (Area Under Curve) for pose accuracy vs threshold.
+
+    Args:
+        scores (list of float): ADD or ADD-S distances in meters.
+        thresholds (np.ndarray): Distance thresholds (default 0 to 10cm).
+
+    Returns:
+        auc_value (float): Area under the curve (normalized).
+    """
+    scores = np.array(scores)
+    accuracies = [(scores < t).mean() for t in thresholds]
+    auc_value = auc(thresholds, accuracies) / thresholds[-1]  # Normalize to [0, 1]
+    return auc_value
 
 def quaternion_to_rotation_matrix(q):
     x, y, z, w = q
