@@ -141,6 +141,10 @@ def inference(args, device):
     posecnn_model.load_state_dict(torch.load(args.model_path, map_location=device, weights_only=True))
     posecnn_model.eval()
 
+    K = test_dataset.cam_intrinsic  # Camera intrinsics
+    fx, fy = K[0, 0], K[1, 1]
+    cx, cy = K[0, 2], K[1, 2]
+
     add_scores = []
     add_s_scores = []
 
@@ -158,29 +162,39 @@ def inference(args, device):
             gt_RT = batch['RTs'][0][cls_id - 1].cpu().numpy()  # (4,4)
             model_points = test_dataset.models_pcd[cls_id - 1]  # (N, 3)
 
+            R_gt = gt_RT[:3, :3]
+            t_gt = gt_RT[:3, 3]
+            R_pred = pred_RT[:3, :3]
+            t_pred = pred_RT[:3, 3]
+
             ## ICP Evaluation
             if args.icp:
-                depth_points = (gt_RT[:3, :3] @ model_points.T).T + gt_RT[:3, 3]  # shape (N, 3)
+                # Get real depth points for the object
+                depth = batch['depth'][0].cpu().numpy()  # (H, W)
+                mask = batch['mask'][0].cpu().numpy() == cls_id  # object mask
+                ys, xs = np.where(mask & (depth > 0))
 
-                # Run ICP
+                if len(xs) < 20:
+                    continue  # skip unreliable masks
+
+                zs = depth[ys, xs]
+                xs_real = (xs - cx) * zs / fx
+                ys_real = (ys - cy) * zs / fy
+                depth_points = np.stack((xs_real, ys_real, zs), axis=-1)
+
+                # Refine predicted pose
                 pred_RT_icp = refine_pose_with_icp(model_points, depth_points, pred_RT)
-                R_gt = gt_RT[:3, :3]
-                t_gt = gt_RT[:3, 3]
                 R_pred = pred_RT_icp[:3, :3]
                 t_pred = pred_RT_icp[:3, 3]
-            else:
-                R_gt = gt_RT[:3, :3]
-                t_gt = gt_RT[:3, 3]
-                R_pred = pred_RT[:3, :3]
-                t_pred = pred_RT[:3, 3]
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
-            add_scores.append(add)
-
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
+            add_scores.append(add)
             add_s_scores.append(adds)
 
-    valid_add_scores = [score for score in add_scores if not np.isnan(score) and not np.isinf(score)]
+    valid_add_scores = [s for s in add_scores if np.isfinite(s)]
+    valid_adds_scores = [s for s in add_s_scores if np.isfinite(s)]
+
     if valid_add_scores:
         # print(add_scores)
         mean_add = np.mean(valid_add_scores)
@@ -188,8 +202,6 @@ def inference(args, device):
     else:
         print("\n No valid predictions to compute ADD.")
 
-
-    valid_adds_scores = [score for score in add_s_scores if not np.isnan(score) and not np.isinf(score)]
     if valid_adds_scores:
         # print(add_s_scores)
         mean_adds = np.mean(valid_adds_scores)
