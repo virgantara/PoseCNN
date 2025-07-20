@@ -126,7 +126,7 @@ class FeatureExtraction(nn.Module):
             feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
-        elif hasattr(self, 'norm') and hasattr(self, 'proj'):
+        elif hasattr(self, 'proj') and hasattr(self, 'backbone'):
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
                 # Forward through the entire Swin model up to the final head input
