@@ -41,7 +41,7 @@ class FeatureExtraction(nn.Module):
         # for i in [0, 2, 5, 7, 10, 12, 14]:
         #     self.embedding1[i].weight.requires_grad = False
         #     self.embedding1[i].bias.requires_grad = False
-        if hasattr(pretrained_model, 'features'):
+        if isinstance(pretrained_model, models.VGG16):
             # VGG-like (e.g., VGG16)
             embedding_layers = list(pretrained_model.features)[:30]
             self.embedding1 = nn.Sequential(*embedding_layers[:23])
