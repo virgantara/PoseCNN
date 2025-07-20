@@ -112,9 +112,15 @@ class FeatureExtraction(nn.Module):
 
             # Instead of manually accessing cls_token, just call forward_features()
             with torch.no_grad():
-                cls_feat = self.vit.forward_features(x)  # [B, C]
+                x = self.vit._process_input(x)  # → [B, 196, C]
+                cls_token = self.vit.cls_token.expand(B, -1, -1)  # → [B, 1, C]
+                x = torch.cat((cls_token, x), dim=1)  # → [B, 197, C]
+                x = x + self.vit.encoder.pos_embedding[:, :x.size(1), :]
+                x = self.vit.encoder.dropout(x)
+                x = self.vit.encoder.layers(x)
+                x = self.vit.encoder.ln(x)
+                cls_feat = x[:, 0]  # [B, C]
 
-            # Project and reshape
             cls_feat = self.proj(cls_feat)  # → [B, 512]
             feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
