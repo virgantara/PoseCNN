@@ -79,7 +79,14 @@ class FeatureExtraction(nn.Module):
 
         elif isinstance(pretrained_model, VisionTransformer):
             self.vit = pretrained_model
-            self.proj = nn.Linear(pretrained_model.heads.head.in_features, 512)  # Usually 768 → 512
+            # Get the input dim to the classification head (usually 768)
+            in_dim = pretrained_model.heads.in_features
+
+            # Replace classification head so vit(x) returns CLS token embedding
+            self.vit.heads = nn.Identity()
+
+            # Project to 512 for PoseCNN compatibility
+            self.proj = nn.Linear(in_dim, 512)
             self.embedding2 = nn.Identity()
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
