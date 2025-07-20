@@ -31,6 +31,12 @@ def get_backbone(name: str):
         return models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
     elif name == "efficientnet":
         return models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+    elif name == "vit":
+        return models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_V1)
+    elif name == "swin":
+        return models.swin_v2_b(weights=models.Swin_V2_B_Weights.IMAGENET1K_V1)
+    elif name == "convnext":
+        return models.convnext_tiny(weights=models.ConvNeXt_Tiny_Weights.IMAGENET1K_V1)
     else:
         raise ValueError(f"Unsupported backbone: {name}")
 
@@ -271,7 +277,7 @@ def parse_args():
                         choices=['posecnn'],
                         help='Model to use, [posecnn]')
     parser.add_argument('--backbone_name', type=str, default='vgg16', metavar='N',
-                        choices=['vgg16','resnet18','resnet50','efficientnet'],
+                        choices=['vgg16','resnet18','resnet50','efficientnet','vit','swin','convnext'],
                         help='Model to use, [resnet18]')
     parser.add_argument('--dataset_name', type=str, default='propspose', metavar='N',
                         choices=['propspose', 'ycb'],
