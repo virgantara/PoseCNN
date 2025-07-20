@@ -108,6 +108,8 @@ class FeatureExtraction(nn.Module):
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
 
+        print("feature1: ",feature1.shape)
+        print("feature2: ",feature2.shape)
         return feature1, feature2 
         # feature1 = self.embedding1(datadict['rgb'])
         # feature2 = self.embedding2(feature1)
