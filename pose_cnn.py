@@ -399,7 +399,7 @@ class PoseCNN(nn.Module):
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
         self.segmentation_branch = SegmentationBranch(input_dim=128)
-        self.RotationBranch = RotationBranch(feature_dim=128)
+        self.RotationBranch = RotationBranch(feature_dim=512)
         self.TranslationBranch = TranslationBranch(input_dim=128)
         ######################################################################
         #                            END OF YOUR CODE                        #
