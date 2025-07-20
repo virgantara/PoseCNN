@@ -7,6 +7,7 @@ from torch.nn.init import kaiming_normal_
 import torchvision.models as models
 from torchvision.ops import RoIPool
 from torchvision.models.vision_transformer import VisionTransformer
+from torchvision.models.vgg import VGG
 
 import numpy as np
 import random
@@ -41,7 +42,7 @@ class FeatureExtraction(nn.Module):
         # for i in [0, 2, 5, 7, 10, 12, 14]:
         #     self.embedding1[i].weight.requires_grad = False
         #     self.embedding1[i].bias.requires_grad = False
-        if isinstance(pretrained_model, models.VGG16):
+        if isinstance(pretrained_model, VGG):
             # VGG-like (e.g., VGG16)
             embedding_layers = list(pretrained_model.features)[:30]
             self.embedding1 = nn.Sequential(*embedding_layers[:23])
