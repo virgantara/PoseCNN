@@ -103,6 +103,7 @@ class FeatureExtraction(nn.Module):
             raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
     
     def forward(self, datadict):
+        x = datadict['rgb']
         """
         feature1: [bs, 512, H/8, W/8]
         feature2: [bs, 512, H/16, W/16]
