@@ -107,6 +107,9 @@ def refine_pose_with_guided_filter_improved(
     src_points_h = np.hstack((src_points, np.ones((src_points.shape[0], 1))))
     src_transformed = (T_total @ src_points_h.T).T[:, :3]
 
+    final_refined_src = []
+    final_refined_tgt = []
+
     for _ in range(max_iter):
         src_pcd = o3d.geometry.PointCloud()
         tgt_pcd = o3d.geometry.PointCloud()
@@ -153,6 +156,9 @@ def refine_pose_with_guided_filter_improved(
         refined_tgt = np.array(refined_tgt)
         weights = np.array(weights).reshape(-1, 1)
 
+        final_refined_src = refined_src
+        final_refined_tgt = refined_tgt
+
         # Weighted centroids
         src_centroid = np.sum(refined_src * weights, axis=0) / np.sum(weights)
         tgt_centroid = np.sum(refined_tgt * weights, axis=0) / np.sum(weights)
@@ -178,8 +184,13 @@ def refine_pose_with_guided_filter_improved(
         src_points_h = np.hstack((src_points, np.ones((src_points.shape[0], 1))))
         src_transformed = (T_total @ src_points_h.T).T[:, :3]
 
+    if len(final_refined_src) < 3:
+        return T_total, 0.0
+        
     # Fitness
-    final_distances = np.linalg.norm(refined_src - refined_tgt, axis=1)
+    final_refined_src = np.array(final_refined_src)
+    final_refined_tgt = np.array(final_refined_tgt)
+    final_distances = np.linalg.norm(final_refined_src - final_refined_tgt, axis=1)
     inliers = final_distances < radius
     fitness = np.sum(inliers) / len(src_points)
 
