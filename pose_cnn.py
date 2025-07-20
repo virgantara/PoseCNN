@@ -117,7 +117,7 @@ class SegmentationBranch(nn.Module):
     """
     Instance Segmentation Module for PoseCNN. 
     """    
-    def __init__(self, num_classes = 10, hidden_layer_dim = 64):
+    def __init__(self, num_classes = 10, input_dim=512, hidden_layer_dim = 64):
         super(SegmentationBranch, self).__init__()
 
         ######################################################################
@@ -147,13 +147,13 @@ class SegmentationBranch(nn.Module):
 
 
 
-        self.conv1 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv1 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv1.weight)
         nn.init.zeros_(self.conv1.bias)
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
@@ -239,7 +239,7 @@ class TranslationBranch(nn.Module):
     """
     3D Translation Estimation Module for PoseCNN. 
     """    
-    def __init__(self, num_classes = 10, hidden_layer_dim = 128):
+    def __init__(self, num_classes = 10,input_dim=512, hidden_layer_dim = 128):
         super(TranslationBranch, self).__init__()
         
         ######################################################################
@@ -253,13 +253,13 @@ class TranslationBranch(nn.Module):
 
 
 
-        self.conv1 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv1 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv1.weight)
         nn.init.zeros_(self.conv1.bias)
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
@@ -390,9 +390,9 @@ class PoseCNN(nn.Module):
         # Replace "pass" statement with your code
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
-        self.segmentation_branch = SegmentationBranch()
-        self.RotationBranch = RotationBranch()
-        self.TranslationBranch = TranslationBranch()
+        self.segmentation_branch = SegmentationBranch(input_dim=128)
+        self.RotationBranch = RotationBranch(feature_dim=128)
+        self.TranslationBranch = TranslationBranch(input_dim=128)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
