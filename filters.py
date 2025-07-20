@@ -94,3 +94,93 @@ def refine_pose_with_guided_filter(src_points, tgt_points, init_pose=np.eye(4), 
     fitness = np.sum(inliers) / len(src_points)
 
     return T @ init_pose, fitness
+
+def refine_pose_with_guided_filter_improved(
+    src_points, tgt_points, init_pose=np.eye(4),
+    radius=0.05, epsilon=1e-5, max_iter=10, mahal_thresh=3.0
+):
+    src_points = np.asarray(src_points).astype(np.float64)
+    tgt_points = np.asarray(tgt_points).astype(np.float64)
+
+    # Apply initial transformation
+    T_total = init_pose.copy()
+    src_points_h = np.hstack((src_points, np.ones((src_points.shape[0], 1))))
+    src_transformed = (T_total @ src_points_h.T).T[:, :3]
+
+    for _ in range(max_iter):
+        src_pcd = o3d.geometry.PointCloud()
+        tgt_pcd = o3d.geometry.PointCloud()
+        src_pcd.points = o3d.utility.Vector3dVector(src_transformed)
+        tgt_pcd.points = o3d.utility.Vector3dVector(tgt_points)
+        kdtree = o3d.geometry.KDTreeFlann(tgt_pcd)
+
+        refined_src = []
+        refined_tgt = []
+        weights = []
+
+        for i in range(len(src_transformed)):
+            k, idx, _ = kdtree.search_radius_vector_3d(src_transformed[i], radius)
+            if k < 3:
+                continue
+
+            neighbors = tgt_points[idx]
+            mean_tgt = np.mean(neighbors, axis=0)
+            cov_tgt = np.cov(neighbors.T) + epsilon * np.eye(3)
+
+            diff = src_transformed[i] - mean_tgt
+            try:
+                cov_inv = np.linalg.inv(cov_tgt)
+            except np.linalg.LinAlgError:
+                continue
+
+            maha_dist = np.sqrt(diff @ cov_inv @ diff)
+            if maha_dist > mahal_thresh:
+                continue
+
+            # Guided filter mapping
+            A = cov_tgt @ cov_inv
+            b = mean_tgt - A @ mean_tgt
+            guided_point = A @ src_transformed[i] + b
+
+            refined_src.append(guided_point)
+            refined_tgt.append(mean_tgt)
+            weights.append(np.exp(-maha_dist))  # Gaussian weighting
+
+        if len(refined_src) < 3:
+            break
+
+        refined_src = np.array(refined_src)
+        refined_tgt = np.array(refined_tgt)
+        weights = np.array(weights).reshape(-1, 1)
+
+        # Weighted centroids
+        src_centroid = np.sum(refined_src * weights, axis=0) / np.sum(weights)
+        tgt_centroid = np.sum(refined_tgt * weights, axis=0) / np.sum(weights)
+
+        src_centered = refined_src - src_centroid
+        tgt_centered = refined_tgt - tgt_centroid
+
+        H = (weights * src_centered).T @ tgt_centered
+        U, _, Vt = np.linalg.svd(H)
+        R = Vt.T @ U.T
+
+        if np.linalg.det(R) < 0:
+            Vt[2, :] *= -1
+            R = Vt.T @ U.T
+
+        t = tgt_centroid - R @ src_centroid
+        T_delta = np.eye(4)
+        T_delta[:3, :3] = R
+        T_delta[:3, 3] = t
+
+        # Update total transformation
+        T_total = T_delta @ T_total
+        src_points_h = np.hstack((src_points, np.ones((src_points.shape[0], 1))))
+        src_transformed = (T_total @ src_points_h.T).T[:, :3]
+
+    # Fitness
+    final_distances = np.linalg.norm(refined_src - refined_tgt, axis=1)
+    inliers = final_distances < radius
+    fitness = np.sum(inliers) / len(src_points)
+
+    return T_total, fitness

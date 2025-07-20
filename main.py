@@ -19,7 +19,7 @@ from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
 from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds, compute_auc
-from filters import refine_pose_with_icp, refine_pose_with_guided_filter
+from filters import refine_pose_with_icp, refine_pose_with_guided_filter, refine_pose_with_guided_filter_improved
 
 def get_backbone(name: str):
     name = name.lower()
@@ -230,8 +230,8 @@ def inference(args, device):
 
                 transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
 
-                delta_RT, fitness = refine_pose_with_guided_filter(transformed_model, depth_points, np.eye(4), radius=0.05)
-
+                # delta_RT, fitness = refine_pose_with_guided_filter(transformed_model, depth_points, np.eye(4), radius=0.05)
+                delta_RT, fitness = refine_pose_with_guided_filter_improved(transformed_model, depth_points, np.eye(4), radius=0.05)
                 if fitness < 0.1:
                     continue
 
