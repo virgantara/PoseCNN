@@ -107,28 +107,20 @@ class FeatureExtraction(nn.Module):
         feature2: [bs, 512, H/16, W/16]
         """
         if hasattr(self, 'vit'):
-            B, C, H, W = x.shape
-            # Resize to expected 224x224 for ViT
-            x_resized = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
+            B = x.size(0)
+            x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
 
-            # ViT.forward gives [B, 1000], but we want features, so use ._process_input → encoder
-            # Follow ViT internals to extract patch token outputs before classifier
-            x = self.vit._process_input(x_resized)  # → patch embeddings [B, N, C]
-            n = x.shape[1]
+            # Instead of manually accessing cls_token, just call forward_features()
+            with torch.no_grad():
+                features = self.vit._process_input(x)  # [B, N, dim]
+                x = self.vit.encoder(features)
+                x = x[:, 0]  # CLS token
 
-            cls_token = self.vit.cls_token.expand(B, -1, -1)
-            x = torch.cat((cls_token, x), dim=1)
-            x = x + self.vit.encoder.pos_embedding[:, :n+1]
-            x = self.vit.encoder.dropout(x)
-            x = self.vit.encoder.layers(x)
-            x = self.vit.encoder.ln(x)
+            cls_feat = self.proj(x)  # project to 512 dims
 
-            cls_feat = x[:, 0]  # CLS token
-            cls_feat = self.proj(cls_feat)  # → [B, 512]
-
-            # Reshape into pseudo-feature map to match CNN pipeline
-            feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)  # Fake [B, 512, 30, 40]
-            feature2 = torch.zeros_like(feature1)  # Not used
+            # Fake feature maps: [B, 512, 30, 40]
+            feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)
+            feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         else:
             feature1 = self.embedding1(x)
