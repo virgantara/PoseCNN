@@ -215,7 +215,29 @@ def inference(args, device):
                 R_pred = pred_RT[:3, :3]
                 t_pred = pred_RT[:3, 3]
             elif args.filter == 'gf':
-                continue
+                depth = batch['depth'][0][0].cpu().numpy() / 1000.0 # shape: (H, W)
+                mask = batch['label'][0][cls_id].cpu().numpy().astype(bool)
+
+                ys, xs = np.where(mask & (depth > 0))
+
+                if len(xs) < 20:
+                    continue  # skip unreliable masks
+
+                zs = depth[ys, xs]
+                xs_real = (xs - cx) * zs / fx
+                ys_real = (ys - cy) * zs / fy
+                depth_points = np.stack((xs_real, ys_real, zs), axis=-1)
+
+                transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
+
+                delta_RT, fitness = refine_pose_with_guided_filter(transformed_model, depth_points, np.eye(4), radius=0.05)
+
+                if fitness < 0.1:
+                    continue
+
+                pred_RT = delta_RT @ pred_RT
+                R_pred = pred_RT[:3, :3]
+                t_pred = pred_RT[:3, 3]
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
