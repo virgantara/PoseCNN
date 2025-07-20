@@ -446,7 +446,10 @@ class PoseCNN(nn.Module):
             
             # Replace "pass" statement with your code
             
+            print(input_dict.size())
             feat1, feat2 = self.feature_extractor(input_dict)
+            print("Feat1: ",feat1.size())
+            print("Feat2: ",feat2.size())
             probab, segmk , d_bbx = self.segmentation_branch(feat1, feat2)
             loss_dict["loss_segmentation"] = loss_cross_entropy(probab,input_dict['label'])
 
