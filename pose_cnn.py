@@ -63,7 +63,8 @@ class FeatureExtraction(nn.Module):
             )
             self.embedding2 = nn.Sequential(
                 pretrained_model.layer3,
-                pretrained_model.layer4
+                pretrained_model.layer4,
+                nn.Conv2d(512, 128, kernel_size=1)
             )
 
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
