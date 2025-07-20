@@ -91,10 +91,10 @@ class FeatureExtraction(nn.Module):
             self.embedding2 = nn.Identity()
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
-            self.embedding1 = pretrained_model.features
-            self.norm = pretrained_model.norm
-            self.proj = nn.Linear(pretrained_model.head.in_features, 512)
+            # self.embedding1 = pretrained_model.features
+            self.backbone = pretrained_model
             self.embedding2 = nn.Identity()
+            self.proj = nn.Linear(pretrained_model.head.in_features, 512)
 
         elif 'convnext' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
@@ -129,10 +129,13 @@ class FeatureExtraction(nn.Module):
         elif hasattr(self, 'norm') and hasattr(self, 'proj'):
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
-                x = self.embedding1(x)
-                x = self.norm(x.mean(dim=[2, 3]))  # global average pool → [B, C]
-            x = self.proj(x)
-            feature1 = x.view(B, 512, 1, 1).expand(B, 512, 30, 40)
+                # Forward through the entire Swin model up to the final head input
+                x = self.backbone.features(x)  # [B, C, H, W]
+                x = x.mean(dim=[2, 3])         # Global Average Pooling → [B, C]
+
+            x = self.proj(x)  # → [B, 512]
+
+            feature1 = x.view(x.size(0), 512, 1, 1).expand(-1, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         else:
