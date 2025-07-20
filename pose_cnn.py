@@ -59,7 +59,6 @@ class FeatureExtraction(nn.Module):
                 pretrained_model.maxpool,
                 pretrained_model.layer1,  # 64
                 pretrained_model.layer2,  # 128
-                nn.Conv2d(128, 512, kernel_size=1)  # upscale to 512
             )
 
             resnet_out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 (resnet18) or 2048 (resnet50)
