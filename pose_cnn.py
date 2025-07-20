@@ -31,24 +31,87 @@ class FeatureExtraction(nn.Module):
     """    
     def __init__(self, pretrained_model):
         super(FeatureExtraction, self).__init__()
-        embedding_layers = list(pretrained_model.features)[:30]
-        ## Embedding Module from begining till the first output feature map
-        self.embedding1 = nn.Sequential(*embedding_layers[:23])
-        ## Embedding Module from the first output feature map till the second output feature map
-        self.embedding2 = nn.Sequential(*embedding_layers[23:])
+        # embedding_layers = list(pretrained_model.features)[:30]
+        # ## Embedding Module from begining till the first output feature map
+        # self.embedding1 = nn.Sequential(*embedding_layers[:23])
+        # ## Embedding Module from the first output feature map till the second output feature map
+        # self.embedding2 = nn.Sequential(*embedding_layers[23:])
 
-        for i in [0, 2, 5, 7, 10, 12, 14]:
-            self.embedding1[i].weight.requires_grad = False
-            self.embedding1[i].bias.requires_grad = False
+        # for i in [0, 2, 5, 7, 10, 12, 14]:
+        #     self.embedding1[i].weight.requires_grad = False
+        #     self.embedding1[i].bias.requires_grad = False
+        if hasattr(pretrained_model, 'features'):
+            # VGG-like (e.g., VGG16)
+            embedding_layers = list(pretrained_model.features)[:30]
+            self.embedding1 = nn.Sequential(*embedding_layers[:23])
+            self.embedding2 = nn.Sequential(*embedding_layers[23:])
+
+            # Freeze early layers
+            for i in [0, 2, 5, 7, 10, 12, 14]:
+                self.embedding1[i].weight.requires_grad = False
+                self.embedding1[i].bias.requires_grad = False
+
+        elif isinstance(pretrained_model, models.ResNet):
+            # ResNet-style (e.g., resnet18, resnet50)
+            self.embedding1 = nn.Sequential(
+                pretrained_model.conv1,
+                pretrained_model.bn1,
+                pretrained_model.relu,
+                pretrained_model.maxpool,
+                pretrained_model.layer1,
+                pretrained_model.layer2
+            )
+            self.embedding2 = nn.Sequential(
+                pretrained_model.layer3,
+                pretrained_model.layer4
+            )
+
+        elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
+            # EfficientNet-style
+            blocks = list(pretrained_model.features.children())
+            split_point = len(blocks) // 2
+            self.embedding1 = nn.Sequential(*blocks[:split_point])
+            self.embedding2 = nn.Sequential(*blocks[split_point:])
+
+        elif 'vit' in pretrained_model.__class__.__name__.lower():
+            # ViT-style: Single transformer block output, reshape needed
+            self.embedding1 = pretrained_model
+            self.embedding2 = nn.Identity()  # not used
+
+        elif 'swin' in pretrained_model.__class__.__name__.lower():
+            # Swin Transformer
+            self.embedding1 = pretrained_model.forward_features
+            self.embedding2 = nn.Identity()
+
+        elif 'convnext' in pretrained_model.__class__.__name__.lower():
+            # ConvNeXt-style
+            blocks = list(pretrained_model.features.children())
+            split_point = len(blocks) // 2
+            self.embedding1 = nn.Sequential(*blocks[:split_point])
+            self.embedding2 = nn.Sequential(*blocks[split_point:])
+
+        else:
+            raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
     
     def forward(self, datadict):
         """
         feature1: [bs, 512, H/8, W/8]
         feature2: [bs, 512, H/16, W/16]
-        """ 
-        feature1 = self.embedding1(datadict['rgb'])
-        feature2 = self.embedding2(feature1)
-        return feature1, feature2
+        """
+        x = datadict['rgb']
+
+        if isinstance(self.embedding2, nn.Identity):
+            # For ViT, Swin: output is flat and may need reshaping
+            feature1 = self.embedding1(x)
+            feature2 = torch.zeros_like(feature1)  # Placeholder
+        else:
+            feature1 = self.embedding1(x)
+            feature2 = self.embedding2(feature1)
+
+        return feature1, feature2 
+        # feature1 = self.embedding1(datadict['rgb'])
+        # feature2 = self.embedding2(feature1)
+        # return feature1, feature2
 
 class SegmentationBranch(nn.Module):
     """
