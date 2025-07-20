@@ -6,6 +6,7 @@ import torch.nn as nn
 from torch.nn.init import kaiming_normal_
 import torchvision.models as models
 from torchvision.ops import RoIPool
+from torchvision.models.vision_transformer import VisionTransformer
 
 import numpy as np
 import random
@@ -76,7 +77,7 @@ class FeatureExtraction(nn.Module):
             self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(pretrained_model.features[-1][-1].out_channels, 512, 1))
 
 
-        elif 'vit' in pretrained_model.__class__.__name__.lower():
+        elif isinstance(pretrained_model, VisionTransformer):
             self.embedding1 = pretrained_model
             self.embedding2 = nn.Identity()
 
