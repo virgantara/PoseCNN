@@ -52,48 +52,45 @@ class FeatureExtraction(nn.Module):
                 self.embedding1[i].bias.requires_grad = False
 
         elif isinstance(pretrained_model, models.ResNet):
-            # Determine output channels of layer4 based on architecture
-            if isinstance(pretrained_model, models.ResNet):
-                out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 for resnet18, 2048 for resnet50
-
             self.embedding1 = nn.Sequential(
-                pretrained_model.conv1,   # -> 64
+                pretrained_model.conv1,
                 pretrained_model.bn1,
                 pretrained_model.relu,
                 pretrained_model.maxpool,
-                pretrained_model.layer1,  # -> 64
-                pretrained_model.layer2   # -> 128
+                pretrained_model.layer1,  # 64
+                pretrained_model.layer2,  # 128
+                nn.Conv2d(128, 512, kernel_size=1)  # upscale to 512
             )
 
+            resnet_out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 (resnet18) or 2048 (resnet50)
+
             self.embedding2 = nn.Sequential(
-                pretrained_model.layer3,  # -> 256 (resnet18) or 1024 (resnet50)
-                pretrained_model.layer4,  # -> 512 (resnet18) or 2048 (resnet50)
-                nn.Conv2d(out_channels, 128, kernel_size=1)  # Adaptively reduce to 128
+                pretrained_model.layer3,
+                pretrained_model.layer4,
+                nn.Conv2d(resnet_out_channels, 512, kernel_size=1)  # force to 512
             )
 
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
-            # EfficientNet-style
             blocks = list(pretrained_model.features.children())
             split_point = len(blocks) // 2
-            self.embedding1 = nn.Sequential(*blocks[:split_point])
-            self.embedding2 = nn.Sequential(*blocks[split_point:])
+            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(pretrained_model.features[split_point - 1][-1].out_channels, 512, 1))
+            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(pretrained_model.features[-1][-1].out_channels, 512, 1))
+
 
         elif 'vit' in pretrained_model.__class__.__name__.lower():
-            # ViT-style: Single transformer block output, reshape needed
             self.embedding1 = pretrained_model
-            self.embedding2 = nn.Identity()  # not used
+            self.embedding2 = nn.Identity()
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
-            # Swin Transformer
             self.embedding1 = pretrained_model.forward_features
             self.embedding2 = nn.Identity()
 
         elif 'convnext' in pretrained_model.__class__.__name__.lower():
-            # ConvNeXt-style
             blocks = list(pretrained_model.features.children())
             split_point = len(blocks) // 2
-            self.embedding1 = nn.Sequential(*blocks[:split_point])
-            self.embedding2 = nn.Sequential(*blocks[split_point:])
+            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(blocks[split_point - 1][-1].out_channels, 512, 1))
+            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(blocks[-1][-1].out_channels, 512, 1))
+
 
         else:
             raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
@@ -405,10 +402,20 @@ class PoseCNN(nn.Module):
         ######################################################################
         # Replace "pass" statement with your code
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+
+        self.input_dim = 512
+
+        # if isinstance(pretrained_backbone, models.vgg16):
+        #     self.input_dim = 512
+        # elif isinstance(pretrained_backbone, models.resnet18):
+        #     self.input_dim = 128
+        # elif isinstance(pretrained_backbone, models.resnet50):
+        #     self.input_dim = 2048
+
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
-        self.segmentation_branch = SegmentationBranch(input_dim=128)
-        self.RotationBranch = RotationBranch(feature_dim=128)
-        self.TranslationBranch = TranslationBranch(input_dim=128)
+        self.segmentation_branch = SegmentationBranch(input_dim=self.input_dim)
+        self.RotationBranch = RotationBranch(feature_dim=self.input_dim)
+        self.TranslationBranch = TranslationBranch(input_dim=self.input_dim)
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
