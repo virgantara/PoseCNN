@@ -78,8 +78,15 @@ class FeatureExtraction(nn.Module):
 
 
         elif isinstance(pretrained_model, VisionTransformer):
-            self.embedding1 = pretrained_model
-            self.embedding2 = nn.Identity()
+            # Extract ViT components
+            self.patch_embed = pretrained_model.conv_proj  # Conv2d(3, 768, kernel_size=16, stride=16)
+            self.cls_token = pretrained_model.cls_token
+            self.pos_embed = pretrained_model.pos_embedding
+            self.encoder = pretrained_model.encoder
+            self.norm = pretrained_model.encoder.ln
+            self.head = nn.Identity()  # or use pretrained_model.head if needed
+
+            self.embedding2 = nn.Identity()  # still unused
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
             self.embedding1 = pretrained_model.forward_features
@@ -100,27 +107,39 @@ class FeatureExtraction(nn.Module):
         feature1: [bs, 512, H/8, W/8]
         feature2: [bs, 512, H/16, W/16]
         """
-        x = datadict['rgb']
+        if hasattr(self, "patch_embed"):
+            B = x.shape[0]
+            x = self.patch_embed(x)  # [B, embed_dim, H', W']
+            x = x.flatten(2).transpose(1, 2)  # [B, N, C]
+            
+            cls_token = self.cls_token.expand(B, -1, -1)
+            x = torch.cat((cls_token, x), dim=1)
 
-        if isinstance(self.embedding2, nn.Identity):
-            # For ViT, Swin: output is flat and may need reshaping
-            print(x.shape)
-            feature1 = self.embedding1(x)
-            feature2 = torch.zeros_like(feature1)  # Placeholder
-            # print("Afeature1: ",feature1.shape)
-            # print("Afeature2: ",feature2.shape)
+            # Interpolate positional embedding if input size ≠ 224x224
+            pos_embed = self.pos_embed
+            if x.shape[1] != pos_embed.shape[1]:
+                pos_embed_cls = pos_embed[:, 0:1, :]
+                pos_embed_patch = pos_embed[:, 1:, :]
+                H = W = int((x.shape[1] - 1)**0.5)
+                pos_embed_patch = pos_embed_patch.reshape(1, int(pos_embed_patch.shape[1]**0.5), -1, pos_embed_patch.shape[2])
+                pos_embed_patch = nn.functional.interpolate(pos_embed_patch.permute(0, 3, 1, 2), size=(H, W), mode='bilinear')
+                pos_embed_patch = pos_embed_patch.flatten(2).permute(0, 2, 1)
+                pos_embed = torch.cat((pos_embed_cls, pos_embed_patch), dim=1)
+
+            x = x + pos_embed
+            x = self.encoder(x)
+            x = self.norm(x)
+            cls_feat = x[:, 0]  # CLS token
+
+            # Reshape to fake feature map for compatibility
+            feature1 = cls_feat.unsqueeze(-1).unsqueeze(-1).expand(-1, -1, 30, 40)  # e.g., [B, 768, 30, 40]
+            feature2 = torch.zeros_like(feature1)
+            return feature1, feature2
         else:
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
-            # print("Bfeature1: ",feature1.shape)
-            # print("Bfeature2: ",feature2.shape)
+            return feature1, feature2
 
-        # print("feature1: ",feature1.shape)
-        # print("feature2: ",feature2.shape)
-        return feature1, feature2 
-        # feature1 = self.embedding1(datadict['rgb'])
-        # feature2 = self.embedding2(feature1)
-        # return feature1, feature2
 
 class SegmentationBranch(nn.Module):
     """
