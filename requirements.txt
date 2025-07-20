@@ -8,3 +8,4 @@ trimesh
 pyrender
 pyquaternion
 open3d
+scikit-learn

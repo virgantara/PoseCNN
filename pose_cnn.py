@@ -325,9 +325,8 @@ class PoseCNN(nn.Module):
         # TranslationBranch, and RotationBranch for use in PoseCNN           #
         ######################################################################
         # Replace "pass" statement with your code
-        vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
-        
-        self.feature_extractor = FeatureExtraction(pretrained_model=vgg16)
+        # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
+        self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
         self.segmentation_branch = SegmentationBranch()
         self.RotationBranch = RotationBranch()
         self.TranslationBranch = TranslationBranch()

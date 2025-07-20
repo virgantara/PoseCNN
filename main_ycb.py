@@ -60,6 +60,14 @@ def _init_():
     if not os.path.exists('checkpoints/'+args.exp_name+'/'+'models'):
         os.makedirs('checkpoints/'+args.exp_name+'/'+'models')
 
+def create_ycb_dataset():
+    if not os.path.exists('dataset'):
+        os.makedirs('dataset')
+    if not os.path.exists('dataset/ycb'):
+        os.makedirs('dataset/ycb')
+    if not os.path.exists('dataset/ycb/YCB_Video_Dataset'):
+        os.makedirs('dataset/ycb/YCB_Video_Dataset')
+
 def main(args, io):
 
 
