@@ -446,7 +446,7 @@ class PoseCNN(nn.Module):
             
             # Replace "pass" statement with your code
             
-            print(input_dict.size())
+            # print(input_dict.size())
             feat1, feat2 = self.feature_extractor(input_dict)
             print("Feat1: ",feat1.size())
             print("Feat2: ",feat2.size())
