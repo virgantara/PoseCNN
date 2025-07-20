@@ -32,7 +32,9 @@ def get_backbone(name: str):
     elif name == "efficientnet":
         return models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
     elif name == "vit":
-        return models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_V1)
+        vit = models.vit_b_16(weights=models.ViT_B_16_Weights.IMAGENET1K_V1)
+        vit.heads = nn.Identity()
+        return vit
     elif name == "swin":
         return models.swin_v2_b(weights=models.Swin_V2_B_Weights.IMAGENET1K_V1)
     elif name == "convnext":
