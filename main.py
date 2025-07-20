@@ -6,7 +6,7 @@ import argparse
 import torch
 import torchvision
 import torchvision.models as models
-
+import torch.nn as nn
 from torch.utils.data import DataLoader
 
 import multiprocessing
