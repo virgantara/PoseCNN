@@ -129,7 +129,7 @@ def main(args, io):
                 for key, value in loss_dict.items():
                     loss_str += f"[{key}: {value:.3f}]"
 
-                print(loss_str)
+                # print(loss_str)
                 loss_history.append(total_loss.item())
             _iter += 1
         
