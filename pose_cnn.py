@@ -79,12 +79,8 @@ class FeatureExtraction(nn.Module):
 
         elif isinstance(pretrained_model, VisionTransformer):
             self.vit = pretrained_model
-            self.embedding1 = nn.Identity()
+            self.proj = nn.Linear(pretrained_model.heads.head.in_features, 512)  # Usually 768 → 512
             self.embedding2 = nn.Identity()
-            self.proj = nn.Sequential(
-                nn.Linear(self.vit.hidden_dim, 512),
-                nn.ReLU()
-            )
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
             self.embedding1 = pretrained_model.forward_features
@@ -109,19 +105,14 @@ class FeatureExtraction(nn.Module):
         if hasattr(self, 'vit'):
             B = x.size(0)
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
-
-            # Instead of manually accessing cls_token, just call forward_features()
             with torch.no_grad():
-                x = self.vit._process_input(x)  # → [B, 196, C]
-                cls_token = self.vit.cls_token.expand(B, -1, -1)  # → [B, 1, C]
-                x = torch.cat((cls_token, x), dim=1)  # → [B, 197, C]
-                x = x + self.vit.encoder.pos_embedding[:, :x.size(1), :]
-                x = self.vit.encoder.dropout(x)
-                x = self.vit.encoder.layers(x)
-                x = self.vit.encoder.ln(x)
-                cls_feat = x[:, 0]  # [B, C]
+                x = self.vit(x)  # → [B, 1000] if heads is not Identity
 
-            cls_feat = self.proj(cls_feat)  # → [B, 512]
+            # If you want features, replace classifier head with Identity:
+            # torchvision.models.vit_b_16(weights="IMAGENET1K_V1").heads = nn.Identity()
+            # then x = [B, 768] (before classification)
+
+            cls_feat = self.proj(x)  # [B, 512]
             feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
