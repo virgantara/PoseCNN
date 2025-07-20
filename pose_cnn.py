@@ -200,7 +200,7 @@ class SegmentationBranch(nn.Module):
 
         x1 = self.relu1(self.conv1(feature1))
         x2 = self.relu2(self.conv2(feature2))
-
+        print(x2.size())
         temp = nn.functional.interpolate(x2, scale_factor=2) + x1
 
         up_sample = nn.functional.interpolate(temp, size=(480,640), mode='bilinear') # up_sample =(N,64,480,640)
@@ -448,8 +448,6 @@ class PoseCNN(nn.Module):
             
             # print(input_dict.size())
             feat1, feat2 = self.feature_extractor(input_dict)
-            print("Feat1: ",feat1.size())
-            print("Feat2: ",feat2.size())
             probab, segmk , d_bbx = self.segmentation_branch(feat1, feat2)
             loss_dict["loss_segmentation"] = loss_cross_entropy(probab,input_dict['label'])
 
