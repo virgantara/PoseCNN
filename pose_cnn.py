@@ -153,7 +153,7 @@ class SegmentationBranch(nn.Module):
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
@@ -263,7 +263,7 @@ class TranslationBranch(nn.Module):
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
@@ -400,7 +400,7 @@ class PoseCNN(nn.Module):
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
         self.segmentation_branch = SegmentationBranch(input_dim=128)
-        self.RotationBranch = RotationBranch(feature_dim=512)
+        self.RotationBranch = RotationBranch(feature_dim=128)
         self.TranslationBranch = TranslationBranch(input_dim=128)
         ######################################################################
         #                            END OF YOUR CODE                        #
