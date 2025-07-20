@@ -202,8 +202,10 @@ class SegmentationBranch(nn.Module):
         x2 = self.relu2(self.conv2(feature2))
         print("x1:", x1.shape)
         print("x2:", x2.shape)
+        x2_up = nn.functional.interpolate(x2, size=x1.shape[2:], mode='bilinear', align_corners=False)
+        temp = x2_up + x1
 
-        temp = nn.functional.interpolate(x2, scale_factor=2) + x1
+        # temp = nn.functional.interpolate(x2, scale_factor=2) + x1
 
         up_sample = nn.functional.interpolate(temp, size=(480,640), mode='bilinear') # up_sample =(N,64,480,640)
         x3 = self.conv3(up_sample)   # x3 =(N,11,480,640)
