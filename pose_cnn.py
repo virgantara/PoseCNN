@@ -104,6 +104,7 @@ class FeatureExtraction(nn.Module):
 
         if isinstance(self.embedding2, nn.Identity):
             # For ViT, Swin: output is flat and may need reshaping
+            print(x.shape)
             feature1 = self.embedding1(x)
             feature2 = torch.zeros_like(feature1)  # Placeholder
             # print("Afeature1: ",feature1.shape)
