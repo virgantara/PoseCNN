@@ -52,19 +52,23 @@ class FeatureExtraction(nn.Module):
                 self.embedding1[i].bias.requires_grad = False
 
         elif isinstance(pretrained_model, models.ResNet):
-            # ResNet-style (e.g., resnet18, resnet50)
+            # Determine output channels of layer4 based on architecture
+            if isinstance(pretrained_model, models.ResNet):
+                out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 for resnet18, 2048 for resnet50
+
             self.embedding1 = nn.Sequential(
-                pretrained_model.conv1,
+                pretrained_model.conv1,   # -> 64
                 pretrained_model.bn1,
                 pretrained_model.relu,
                 pretrained_model.maxpool,
-                pretrained_model.layer1,
-                pretrained_model.layer2
+                pretrained_model.layer1,  # -> 64
+                pretrained_model.layer2   # -> 128
             )
+
             self.embedding2 = nn.Sequential(
-                pretrained_model.layer3,
-                pretrained_model.layer4,
-                nn.Conv2d(512, 128, kernel_size=1)
+                pretrained_model.layer3,  # -> 256 (resnet18) or 1024 (resnet50)
+                pretrained_model.layer4,  # -> 512 (resnet18) or 2048 (resnet50)
+                nn.Conv2d(out_channels, 128, kernel_size=1)  # Adaptively reduce to 128
             )
 
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
