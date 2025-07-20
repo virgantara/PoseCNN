@@ -153,7 +153,7 @@ class SegmentationBranch(nn.Module):
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
@@ -259,7 +259,7 @@ class TranslationBranch(nn.Module):
         self.relu1 = nn.ReLU()
 
 
-        self.conv2 = nn.Conv2d(input_dim, hidden_layer_dim, 1)
+        self.conv2 = nn.Conv2d(512, hidden_layer_dim, 1)
         nn.init.kaiming_normal_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         self.relu2 = nn.ReLU()
