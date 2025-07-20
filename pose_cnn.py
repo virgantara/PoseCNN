@@ -105,16 +105,16 @@ class FeatureExtraction(nn.Module):
             # For ViT, Swin: output is flat and may need reshaping
             feature1 = self.embedding1(x)
             feature2 = torch.zeros_like(feature1)  # Placeholder
-            print("Afeature1: ",feature1.shape)
-            print("Afeature2: ",feature2.shape)
+            # print("Afeature1: ",feature1.shape)
+            # print("Afeature2: ",feature2.shape)
         else:
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
-            print("Bfeature1: ",feature1.shape)
-            print("Bfeature2: ",feature2.shape)
+            # print("Bfeature1: ",feature1.shape)
+            # print("Bfeature2: ",feature2.shape)
 
-        print("feature1: ",feature1.shape)
-        print("feature2: ",feature2.shape)
+        # print("feature1: ",feature1.shape)
+        # print("feature2: ",feature2.shape)
         return feature1, feature2 
         # feature1 = self.embedding1(datadict['rgb'])
         # feature2 = self.embedding2(feature1)
