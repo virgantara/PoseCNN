@@ -80,7 +80,7 @@ class FeatureExtraction(nn.Module):
         elif isinstance(pretrained_model, VisionTransformer):
             self.vit = pretrained_model
             # Get the input dim to the classification head (usually 768)
-            in_dim = pretrained_model.heads.in_features
+            in_dim = self.vit.heads.in_features
 
             # Replace classification head so vit(x) returns CLS token embedding
             self.vit.heads = nn.Identity()
