@@ -19,7 +19,7 @@ from rob599 import reset_seed
 from rob599.grad import rel_error
 from rob599.PROPSPoseDataset import PROPSPoseDataset
 from metrics import compute_add, quaternion_to_rotation_matrix, compute_adds, compute_auc
-from icp import refine_pose_with_icp
+from filters import refine_pose_with_icp, refine_pose_with_guided_filter
 
 def get_backbone(name: str):
     name = name.lower()
@@ -189,7 +189,7 @@ def inference(args, device):
             t_pred = pred_RT[:3, 3]
 
             ## ICP Evaluation
-            if args.icp:
+            if args.filter == 'icp':
                 # Get real depth points for the object
                 depth = batch['depth'][0][0].cpu().numpy() / 1000.0 # shape: (H, W)
                 mask = batch['label'][0][cls_id].cpu().numpy().astype(bool)
@@ -204,12 +204,9 @@ def inference(args, device):
                 ys_real = (ys - cy) * zs / fy
                 depth_points = np.stack((xs_real, ys_real, zs), axis=-1)
 
-                # Refine predicted pose
                 transformed_model = (R_pred @ model_points.T).T + t_pred  # (N, 3)
 
-                # print("Before ICP ADD:", compute_add(R_gt, t_gt, R_pred, t_pred, model_points))
                 delta_RT, fitness = refine_pose_with_icp(transformed_model, depth_points, np.eye(4), threshold=0.05)
-                # print("Delta RT from ICP:\n", delta_RT)
                 
                 if fitness < 0.1:
                     continue
@@ -217,15 +214,8 @@ def inference(args, device):
                 pred_RT = delta_RT @ pred_RT
                 R_pred = pred_RT[:3, :3]
                 t_pred = pred_RT[:3, 3]
-                # print("After ICP ADD:", compute_add(R_gt, t_gt, R_pred, t_pred, model_points))
-                # Step 2: run ICP from transformed_model to depth_points
-                # delta_RT = refine_pose_with_icp(transformed_model, depth_points, np.eye(4))  # refine from identity
-
-                # # Step 3: apply refinement to original prediction
-                # pred_RT = delta_RT @ pred_RT  # update predicted pose
-
-                # R_pred = pred_RT[:3, :3]
-                # t_pred = pred_RT[:3, 3]
+            elif args.filter == 'gf':
+                continue
 
             add = compute_add(R_gt, t_gt, R_pred, t_pred, model_points)
             adds = compute_adds(R_gt, t_gt, R_pred, t_pred, model_points)
@@ -282,6 +272,9 @@ def parse_args():
     parser.add_argument('--dataset_name', type=str, default='propspose', metavar='N',
                         choices=['propspose', 'ycb'],
                         help='Dataset name to test, [modelnet40svm, scanobjectnnsvm]')
+    parser.add_argument('--filter', type=str, default='none', metavar='N',
+                        choices=['none', 'icp','gf'],
+                        help='Dataset name to test, [modelnet40svm, scanobjectnnsvm]')
     parser.add_argument('--batch_size', type=int, default=32, metavar='batch_size',
                         help='Size of batch)')
     parser.add_argument('--test_batch_size', type=int, default=16, metavar='batch_size',
@@ -301,7 +294,6 @@ def parse_args():
                         help='random seed (default: 1)')
     parser.add_argument('--eval', type=bool, default=False,
                         help='evaluate the model')
-    parser.add_argument('--icp', action='store_true', help='Refine with ICP')
     parser.add_argument('--visualize', action='store_true', help='Visualization')
     parser.add_argument('--weight_decay', type=float, default=1e-5,
                         help='Weight Decay')
