@@ -364,7 +364,8 @@ class RotationBranch(nn.Module):
         # TODO: Implement forward pass of rotation branch.                   #
         ######################################################################
         # Replace "pass" statement with your code
-        
+        print("feature1:",feature1.shape)
+        print("feature2:",feature2.shape)
         out1 = self.roi1(feature1, bbx.to(dtype = torch.float32))
         out2 = self.roi2(feature2, bbx.to(dtype = torch.float32))
         print("out1:",out1.shape)
