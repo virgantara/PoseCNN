@@ -255,8 +255,7 @@ class SegmentationBranch(nn.Module):
         segmentation = torch.argmax(probability,dim=1) #  (B,H,W)
         bbx = self.label2bbx(segmentation)
 
-        print("BBX:",bbx.shape) 
-
+        
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
