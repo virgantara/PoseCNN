@@ -424,7 +424,7 @@ class PoseCNN(nn.Module):
     """
     PoseCNN
     """
-    def __init__(self, pretrained_backbone, input_dim=512, models_pcd, cam_intrinsic):
+    def __init__(self, pretrained_backbone, input_dim, models_pcd, cam_intrinsic):
         super(PoseCNN, self).__init__()
 
         self.iou_threshold = 0.7
