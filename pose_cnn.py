@@ -541,6 +541,8 @@ class PoseCNN(nn.Module):
                 # Replace "pass" statement with your code
                 
                 feat1, feat2 = self.feature_extractor(input_dict)
+                print("feat1:",feat1.shape)
+                print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
 
                 trans_i = self.TranslationBranch(feat1, feat2)
