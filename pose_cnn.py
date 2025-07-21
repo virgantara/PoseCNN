@@ -148,9 +148,7 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         else:
-            print("X:",x.shape)
             feature1 = self.embedding1(x)
-            print("feature1:",feature1.shape)
             feature2 = self.embedding2(feature1)
             return feature1, feature2
 
@@ -553,8 +551,8 @@ class PoseCNN(nn.Module):
                 # Replace "pass" statement with your code
                 
                 feat1, feat2 = self.feature_extractor(input_dict)
-                print("feat1:",feat1.shape)
-                print("feat2:",feat2.shape)
+                # print("feat1:",feat1.shape)
+                # print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
 
                 if bb_xs.ndim == 2 and bb_xs.shape[0] > 0:
@@ -563,7 +561,7 @@ class PoseCNN(nn.Module):
 
                     bb_xs = bb_xs.to(torch.float32)
 
-                    print("BB_XS:",bb_xs.shape)
+                    # print("BB_XS:",bb_xs.shape)
                     quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
                     pred__R, _ = self.estimateRotation(quater , bb_xs)
 
