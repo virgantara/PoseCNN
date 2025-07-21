@@ -435,10 +435,10 @@ class PoseCNN(nn.Module):
 
         # if isinstance(pretrained_backbone, models.vgg16):
         #     self.input_dim = 512
-        # elif isinstance(pretrained_backbone, models.resnet18):
-        #     self.input_dim = 128
-        # elif isinstance(pretrained_backbone, models.resnet50):
-        #     self.input_dim = 2048
+        if isinstance(pretrained_backbone, models.resnet18):
+            self.input_dim = 128
+        elif isinstance(pretrained_backbone, models.resnet50):
+            self.input_dim = 512
 
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
         self.segmentation_branch = SegmentationBranch(input_dim=self.input_dim)
