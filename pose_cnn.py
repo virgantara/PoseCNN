@@ -131,7 +131,8 @@ class FeatureExtraction(nn.Module):
             with torch.no_grad():
                 # Forward through the entire Swin model up to the final head input
                 x = self.backbone.features(x)  # [B, C, H, W]
-                print("Backbone output:", x.shape)
+                # print("Backbone output:", x.shape)
+                x = x.permute(0, 3, 1, 2) 
                 x = x.mean(dim=[2, 3])         # Global Average Pooling → [B, C]
 
             x = self.proj(x)  # → [B, 512]
