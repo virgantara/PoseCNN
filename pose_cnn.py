@@ -431,14 +431,14 @@ class PoseCNN(nn.Module):
         # Replace "pass" statement with your code
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
 
-        self.input_dim = 512
+        self.input_dim = 128
 
         # if isinstance(pretrained_backbone, models.vgg16):
         #     self.input_dim = 512
-        if isinstance(pretrained_backbone, models.resnet18):
-            self.input_dim = 128
-        elif isinstance(pretrained_backbone, models.resnet50):
-            self.input_dim = 512
+        # elif isinstance(pretrained_backbone, models.resnet18):
+        #     self.input_dim = 128
+        # elif isinstance(pretrained_backbone, models.resnet50):
+        #     self.input_dim = 2048
 
         self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
         self.segmentation_branch = SegmentationBranch(input_dim=self.input_dim)
