@@ -130,7 +130,7 @@ class FeatureExtraction(nn.Module):
             # then x = [B, 768] (before classification)
 
             cls_feat = self.proj(x)  # [B, 512]
-            feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30, 40)
+            feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30 * 2, 40 * 2)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         elif hasattr(self, 'proj') and hasattr(self, 'backbone'):
@@ -550,11 +550,10 @@ class PoseCNN(nn.Module):
                 # Replace "pass" statement with your code
                 
                 feat1, feat2 = self.feature_extractor(input_dict)
-                print("feat1:",feat1.shape)
-                print("feat2:",feat2.shape)
+                # print("feat1:",feat1.shape)
+                # print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
-                print("segmentation:",segmentation.shape)
-                print("bb_xs:",bb_xs.shape)
+
                 if bb_xs.ndim == 2 and bb_xs.shape[0] > 0:
                     trans_i = self.TranslationBranch(feat1, feat2)
 
