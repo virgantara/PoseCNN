@@ -547,6 +547,7 @@ class PoseCNN(nn.Module):
 
 
                 bb_xs = bb_xs.to(torch.float32)
+                print("BB_XS:",bb_xs.shape)
                 quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
                 pred__R, _ = self.estimateRotation(quater , bb_xs)
 
