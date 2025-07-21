@@ -65,11 +65,18 @@ class FeatureExtraction(nn.Module):
 
             resnet_out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 (resnet18) or 2048 (resnet50)
 
-            self.embedding2 = nn.Sequential(
-                pretrained_model.layer3,
-                pretrained_model.layer4,
-                nn.Conv2d(resnet_out_channels, 512, kernel_size=1)  # force to 512
-            )
+            if resnet_out_channels == 2048:
+                self.embedding2 = nn.Sequential(
+                    pretrained_model.layer3,
+                    pretrained_model.layer4,
+                    nn.Conv2d(resnet_out_channels, 512, kernel_size=1)  # force to 512
+                )
+            elif resnet_out_channels == 512:
+                self.embedding2 = nn.Sequential(
+                    pretrained_model.layer3,
+                    pretrained_model.layer4,
+                    nn.Conv2d(resnet_out_channels, 128, kernel_size=1)  # force to 512
+                )
 
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
