@@ -547,22 +547,28 @@ class PoseCNN(nn.Module):
                 print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
 
-                trans_i = self.TranslationBranch(feat1, feat2)
+                if bb_xs.ndim == 2 and bb_xs.shape[0] > 0:
+                    trans_i = self.TranslationBranch(feat1, feat2)
 
 
-                bb_xs = bb_xs.to(torch.float32)
-                print("BB_XS:",bb_xs.shape)
-                quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
-                pred__R, _ = self.estimateRotation(quater , bb_xs)
+                    bb_xs = bb_xs.to(torch.float32)
+
+                    print("BB_XS:",bb_xs.shape)
+                    quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
+                    pred__R, _ = self.estimateRotation(quater , bb_xs)
 
 
-                pred_centers, pred_depths = HoughVoting(segmentation, trans_i, num_classes=10)
+                    pred_centers, pred_depths = HoughVoting(segmentation, trans_i, num_classes=10)
 
-                bb_xs = bb_xs.to(device=bb_xs.device, dtype=torch.long)
-                # bb_xs = bb_xs.to(torch.cuda.LongTensor())
+                    bb_xs = bb_xs.to(device=bb_xs.device, dtype=torch.long)
+                    # bb_xs = bb_xs.to(torch.cuda.LongTensor())
 
 
-                output_dict = self.generate_pose(pred__R , pred_centers, pred_depths, bb_xs)
+                    output_dict = self.generate_pose(pred__R , pred_centers, pred_depths, bb_xs)
+                else:
+                    print("No valid bounding boxes detected for rotation branch.")
+                    output_dict = {}
+                
 
 
                 ######################################################################
