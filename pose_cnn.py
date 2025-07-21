@@ -141,7 +141,9 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         else:
+            print("X:",x.shape)
             feature1 = self.embedding1(x)
+            print("feature1:",feature1.shape)
             feature2 = self.embedding2(feature1)
             return feature1, feature2
 
