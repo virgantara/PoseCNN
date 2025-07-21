@@ -431,7 +431,7 @@ class PoseCNN(nn.Module):
         # Replace "pass" statement with your code
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
 
-        self.input_dim = 128
+        self.input_dim = 512
 
         # if isinstance(pretrained_backbone, models.vgg16):
         #     self.input_dim = 512
