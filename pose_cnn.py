@@ -553,14 +553,15 @@ class PoseCNN(nn.Module):
                 print("feat1:",feat1.shape)
                 print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
-
+                print("segmentation:",segmentation.shape)
+                print("BB_XS:",bb_xs.shape)
                 if bb_xs.ndim == 2 and bb_xs.shape[0] > 0:
                     trans_i = self.TranslationBranch(feat1, feat2)
 
 
                     bb_xs = bb_xs.to(torch.float32)
 
-                    # print("BB_XS:",bb_xs.shape)
+                    print("BB_XS:",bb_xs.shape)
                     quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
                     pred__R, _ = self.estimateRotation(quater , bb_xs)
 
