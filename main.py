@@ -87,8 +87,14 @@ def main(args, io):
 
     backbone_name = args.backbone_name
     backbone_model = get_backbone(backbone_name)
+
+    input_dim = 512
+
+    if backbone_name == 'resnet18':
+        input_dim = 128
     
     posecnn_model = PoseCNN(pretrained_backbone = backbone_model,
+                            input_dim = input_dim,
                            models_pcd = torch.tensor(train_dataset.models_pcd).to(DEVICE, dtype=torch.float32),
                            cam_intrinsic = train_dataset.cam_intrinsic).to(DEVICE)
 

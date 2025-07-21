@@ -424,7 +424,7 @@ class PoseCNN(nn.Module):
     """
     PoseCNN
     """
-    def __init__(self, pretrained_backbone, models_pcd, cam_intrinsic):
+    def __init__(self, pretrained_backbone, input_dim=512, models_pcd, cam_intrinsic):
         super(PoseCNN, self).__init__()
 
         self.iou_threshold = 0.7
@@ -440,7 +440,7 @@ class PoseCNN(nn.Module):
         # Replace "pass" statement with your code
         # vgg16 = models.vgg16(weights=models.VGG16_Weights.IMAGENET1K_V1)
 
-        self.input_dim = 128
+        self.input_dim = input_dim
 
 
         # if isinstance(pretrained_backbone, models.vgg16):
