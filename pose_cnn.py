@@ -159,7 +159,7 @@ class FeatureExtraction(nn.Module):
                 x = self.backbone.features(x)  # Output: [B, C, H/32, W/32] (e.g. [B, 768, 7, 7])
 
             print("X before permute:",x.shape)
-            # x = x.permute(0, 3, 1, 2).contiguous()
+            x = x.permute(0, 3, 1, 2).contiguous()
 
 
             # Upsample to match [B, 512, H/8, W/8] as needed
