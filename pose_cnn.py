@@ -94,7 +94,6 @@ class FeatureExtraction(nn.Module):
             self.vit.heads = nn.Identity()
 
             # Project to 512 for PoseCNN compatibility
-            print("In_dim VIT",in_dim)
             self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
@@ -125,8 +124,8 @@ class FeatureExtraction(nn.Module):
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
                 print("X before process input:", x.shape)
-                x = self.vit._process_input(x)
-                n = x.shape[0]
+                # x = self.vit._process_input(x)
+                # n = x.shape[0]
                 print("X Before Conv Proj:", x.shape)
                 x = self.vit.conv_proj(x)
                 print("X After Conv Proj :", x.shape)
