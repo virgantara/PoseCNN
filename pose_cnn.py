@@ -94,6 +94,7 @@ class FeatureExtraction(nn.Module):
             self.vit.heads = nn.Identity()
 
             # Project to 512 for PoseCNN compatibility
+            print("In_dim VIT",in_dim)
             self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
