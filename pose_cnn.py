@@ -123,6 +123,7 @@ class FeatureExtraction(nn.Module):
             B = x.size(0)
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
+                print("X before process input:", x.shape)
                 x = self.vit._process_input(x)
                 n = x.shape[0]
                 print("X:", x.shape)
