@@ -94,7 +94,7 @@ class FeatureExtraction(nn.Module):
             self.vit.heads = nn.Identity()
 
             # Project to 512 for PoseCNN compatibility
-            self.proj = nn.Linear(in_dim, 512)
+            self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
