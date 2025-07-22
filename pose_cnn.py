@@ -127,6 +127,8 @@ class FeatureExtraction(nn.Module):
             with torch.no_grad():
                 x = self.vit.conv_proj(x)                    # [B, 768, 14, 14]
                 x = x.flatten(2).transpose(1, 2)             # [B, 196, 768]
+                cls_token = self.vit.class_token.expand(x.shape[0], -1, -1)  # [B, 1, 768]
+                x = torch.cat((cls_token, x), dim=1)              # [B, 197, 768]
                 x = self.vit.encoder(x)                      # Encoder already adds cls token & pos embedding
 
             # Discard CLS token (first token), keep spatial tokens
