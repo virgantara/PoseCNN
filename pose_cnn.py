@@ -125,7 +125,7 @@ class FeatureExtraction(nn.Module):
             with torch.no_grad():
                 x = self.vit._process_input(x)
                 n = x.shape[0]
-
+                print("X:", x.shape)
                 x = self.vit.conv_proj(x)
                 x = x.flatten(2).transpose(1,2)
 
