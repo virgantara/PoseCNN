@@ -123,7 +123,7 @@ class FeatureExtraction(nn.Module):
             B = x.size(0)
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
-                print("X before process input:", x.shape)
+                # print("X before process input:", x.shape)
                 # x = self.vit._process_input(x)
                 # n = x.shape[0]
                 print("X Before Conv Proj:", x.shape)
@@ -131,7 +131,7 @@ class FeatureExtraction(nn.Module):
                 print("X After Conv Proj :", x.shape)
                 x = x.flatten(2).transpose(1,2)
 
-                cls_token = self.vit.cls_token.expand(n, -1, -1)
+                cls_token = self.vit.cls_token.expand(B, -1, -1)
                 # print("cls_token: ",cls_token.shape)
 
                 x = torch.cat((cls_token, x), dim=1)
