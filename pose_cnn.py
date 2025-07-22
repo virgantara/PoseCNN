@@ -156,7 +156,7 @@ class FeatureExtraction(nn.Module):
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             # print("X before backbone feature:",x.shape)
             with torch.no_grad():
-                x = self.backbone.forward_features(x)  # Output: [B, C, H/32, W/32] (e.g. [B, 768, 7, 7])
+                x = self.backbone(x)  # Output: [B, C, H/32, W/32] (e.g. [B, 768, 7, 7])
 
             # print("X before permute:",x.shape)
             # x = x.permute(0, 3, 1, 2).contiguous()
