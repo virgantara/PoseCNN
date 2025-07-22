@@ -121,33 +121,21 @@ class FeatureExtraction(nn.Module):
         """
         if hasattr(self, 'vit'):
             B = x.size(0)
-            x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
+            x = nn.functional.interpolate(x, (224, 224))     # Resize to ViT input
+            x = self.vit._process_input(x)                   # Normalized input
+
             with torch.no_grad():
-                # print("X before process input:", x.shape)
-                # x = self.vit._process_input(x)
-                # n = x.shape[0]
-                print("X Before Conv Proj:", x.shape)
-                x = self.vit.conv_proj(x)
-                print("X After Conv Proj :", x.shape)
-                x = x.flatten(2).transpose(1,2)
+                x = self.vit.conv_proj(x)                    # [B, 768, 14, 14]
+                x = x.flatten(2).transpose(1, 2)             # [B, 196, 768]
+                x = self.vit.encoder(x)                      # Encoder already adds cls token & pos embedding
 
-                cls_token = self.vit.cls_token.expand(B, -1, -1)
-                # print("cls_token: ",cls_token.shape)
+            # Discard CLS token (first token), keep spatial tokens
+            x = x[:, 1:, :]                                  # [B, 196, 768]
+            x = x.permute(0, 2, 1).reshape(B, 768, 14, 14)    # [B, 768, 14, 14]
 
-                x = torch.cat((cls_token, x), dim=1)
-
-                x = x + self.vit.encoder.pos_embedding
-                x = self.vit.encoder.dropout(x)
-
-                for blk in self.vit.encoder.layers:
-                    x = blk(x)
-
-            x_spatial = x[:, 1:, :]
-            h = w = int(x_spatial.shape[1] ** 0.5)
-            x_spatial = x_spatial.permute(0, 2, 1).reshape( B, 768, h, w)
-
-            feature1 = self.proj(x_spatial)
-            feature1 = nn.functional.interpolate(feature1, size=(30, 40), mode='bilinear', align_corners=False)
+            # Project down if needed (e.g., to [B, 512, 14, 14])
+            feature1 = self.proj(x)
+            feature1 = nn.functional.interpolate(feature1, size=(30, 40), mode='bilinear')
 
             feature2 = torch.zeros_like(feature1)
 
