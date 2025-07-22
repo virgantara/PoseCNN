@@ -123,15 +123,29 @@ class FeatureExtraction(nn.Module):
             B = x.size(0)
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
             with torch.no_grad():
-                x = self.vit(x)  # → [B, 1000] if heads is not Identity
+                x = self.vit._process_input(x)
+                n = x.shape[0]
 
-            # If you want features, replace classifier head with Identity:
-            # torchvision.models.vit_b_16(weights="IMAGENET1K_V1").heads = nn.Identity()
-            # then x = [B, 768] (before classification)
+                x = self.vit.conv_proj(x).flatten(2).transpose(1,2)
 
-            cls_feat = self.proj(x)  # [B, 512]
-            feature1 = cls_feat.view(B, 512, 1, 1).expand(B, 512, 30 * 2, 40 * 2)
+                cls_token = self.vit.cls_token.expand(n, -1, -1)
+                # print("cls_token: ",cls_token.shape)
+
+                x = torch.cat((cls_token, x), dim=1)
+
+                x = x + self.vit.encoder.pos_embedding
+                x = self.vit.encoder.dropout(x)
+
+                for blk in self.vit.encoder.layers:
+                    x = blk(x)
+
+            x_spatial = x[:, 1:, :]
+            h = w = int(x_spatial.shape[1] ** 0.5)
+            x_spatial = x_spatial.permute(0, 2, 1).reshape( B, 768, h, w)
+
+            feature1 = self.proj(x_spatial)
             feature2 = torch.zeros_like(feature1)
+
             return feature1, feature2
         elif hasattr(self, 'proj') and hasattr(self, 'backbone'):
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
@@ -275,7 +289,7 @@ class SegmentationBranch(nn.Module):
                 if cls_id != 0: 
                     # cls_id == 0 is the background
                     y, x = torch.where(mask[batch_id, cls_id] != 0)
-                    print("Mask:",y.numel())
+                    # print("Mask:",y.numel())
                     if y.numel() >= _LABEL2MASK_THRESHOL:
                         bbx.append([batch_id, torch.min(x).item(), torch.min(y).item(), 
                                     torch.max(x).item(), torch.max(y).item(), cls_id])
@@ -552,18 +566,18 @@ class PoseCNN(nn.Module):
                 # Replace "pass" statement with your code
                 
                 feat1, feat2 = self.feature_extractor(input_dict)
-                print("feat1:",feat1.shape)
-                print("feat2:",feat2.shape)
+                # print("feat1:",feat1.shape)
+                # print("feat2:",feat2.shape)
                 _, segmentation, bb_xs = self.segmentation_branch(feat1, feat2)
-                print("segmentation:",segmentation.shape)
-                print("BB_XS:",bb_xs.shape)
+                # print("segmentation:",segmentation.shape)
+                # print("BB_XS:",bb_xs.shape)
                 if bb_xs.ndim == 2 and bb_xs.shape[0] > 0:
                     trans_i = self.TranslationBranch(feat1, feat2)
 
 
                     bb_xs = bb_xs.to(torch.float32)
 
-                    print("BB_XS:",bb_xs.shape)
+                    # print("BB_XS:",bb_xs.shape)
                     quater =  self.RotationBranch(feat1, feat2, bb_xs[:,0:5])
                     pred__R, _ = self.estimateRotation(quater , bb_xs)
 
