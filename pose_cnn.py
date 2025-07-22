@@ -126,8 +126,9 @@ class FeatureExtraction(nn.Module):
                 print("X before process input:", x.shape)
                 x = self.vit._process_input(x)
                 n = x.shape[0]
-                print("X:", x.shape)
+                print("X Before Conv Proj:", x.shape)
                 x = self.vit.conv_proj(x)
+                print("X After Conv Proj :", x.shape)
                 x = x.flatten(2).transpose(1,2)
 
                 cls_token = self.vit.cls_token.expand(n, -1, -1)
