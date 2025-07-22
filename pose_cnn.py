@@ -104,7 +104,7 @@ class FeatureExtraction(nn.Module):
             self.backbone.head = nn.Identity()
             
             # Project from Swin output dim (usually 768 or 1024) to 512
-            in_dim = self.backbone.num_features  # usually 768 or 1024 depending on swin_t/s/b/l
+            in_dim = self.backbone.head.in_features
             self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
