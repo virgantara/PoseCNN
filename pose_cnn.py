@@ -269,12 +269,13 @@ class SegmentationBranch(nn.Module):
         label_repeat = label.view(bs, 1, H, W).repeat(1, self.num_classes, 1, 1).to(device)
         label_target = torch.linspace(0, self.num_classes - 1, steps = self.num_classes).view(1, -1, 1, 1).repeat(bs, 1, H, W).to(device)
         mask = (label_repeat == label_target)
-        print("Mask:",mask.shape)
+
         for batch_id in range(mask.shape[0]):
             for cls_id in range(mask.shape[1]):
                 if cls_id != 0: 
                     # cls_id == 0 is the background
                     y, x = torch.where(mask[batch_id, cls_id] != 0)
+                    print("Mask:",y.numel())
                     if y.numel() >= _LABEL2MASK_THRESHOL:
                         bbx.append([batch_id, torch.min(x).item(), torch.min(y).item(), 
                                     torch.max(x).item(), torch.max(y).item(), cls_id])
