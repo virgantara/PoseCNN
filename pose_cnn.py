@@ -98,10 +98,15 @@ class FeatureExtraction(nn.Module):
             self.embedding2 = nn.Identity()
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
-            # self.embedding1 = pretrained_model.features
-            self.backbone = pretrained_model
+            self.backbone = pretrained_model  # torchvision.models.swin_*
+    
+            # Remove the classification head so it outputs features
+            self.backbone.head = nn.Identity()
+            
+            # Project from Swin output dim (usually 768 or 1024) to 512
+            in_dim = self.backbone.num_features  # usually 768 or 1024 depending on swin_t/s/b/l
+            self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
-            self.proj = nn.Linear(pretrained_model.head.in_features, 512)
 
         elif 'convnext' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
@@ -139,6 +144,21 @@ class FeatureExtraction(nn.Module):
             feature1 = self.proj(x)
             feature1 = nn.functional.interpolate(feature1, size=(30, 40), mode='bilinear')
 
+            feature2 = torch.zeros_like(feature1)
+
+            return feature1, feature2
+        elif hasattr(self, 'backbone'):  # for swin
+            B = x.size(0)
+            x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
+
+            with torch.no_grad():
+                x = self.backbone.features(x)  # Output: [B, C, H/32, W/32] (e.g. [B, 768, 7, 7])
+
+            # Upsample to match [B, 512, H/8, W/8] as needed
+            x = self.proj(x)  # [B, 512, h, w]
+            x = nn.functional.interpolate(x, size=(30, 40), mode='bilinear', align_corners=False)
+
+            feature1 = x
             feature2 = torch.zeros_like(feature1)
 
             return feature1, feature2
