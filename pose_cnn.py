@@ -144,6 +144,8 @@ class FeatureExtraction(nn.Module):
             x_spatial = x_spatial.permute(0, 2, 1).reshape( B, 768, h, w)
 
             feature1 = self.proj(x_spatial)
+            feature1 = nn.functional.interpolate(feature1, size=(30, 40), mode='bilinear', align_corners=False)
+
             feature2 = torch.zeros_like(feature1)
 
             return feature1, feature2
