@@ -122,7 +122,7 @@ class FeatureExtraction(nn.Module):
         if hasattr(self, 'vit'):
             B = x.size(0)
             x = nn.functional.interpolate(x, (224, 224))     # Resize to ViT input
-            x = self.vit._process_input(x)                   # Normalized input
+            # x = self.vit._process_input(x)                   # Normalized input
 
             with torch.no_grad():
                 x = self.vit.conv_proj(x)                    # [B, 768, 14, 14]
