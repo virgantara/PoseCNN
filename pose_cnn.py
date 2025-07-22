@@ -99,12 +99,13 @@ class FeatureExtraction(nn.Module):
 
         elif 'swin' in pretrained_model.__class__.__name__.lower():
             self.backbone = pretrained_model  # torchvision.models.swin_*
-    
+            
+            in_dim = self.backbone.head.in_features
+
             # Remove the classification head so it outputs features
             self.backbone.head = nn.Identity()
             
-            # Project from Swin output dim (usually 768 or 1024) to 512
-            in_dim = self.backbone.head.in_features
+            
             self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
