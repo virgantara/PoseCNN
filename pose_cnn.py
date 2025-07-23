@@ -222,20 +222,20 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
 
             return feature1, feature2
-        elif hasattr(self, 'proj') and hasattr(self, 'backbone'):
-            x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
-            with torch.no_grad():
-                # Forward through the entire Swin model up to the final head input
-                x = self.backbone.features(x)  # [B, H, W, C]
-                # print("Backbone output:", x.shape)
-                x = x.permute(0, 3, 1, 2) # [B, C, H, W]
-                x = x.mean(dim=[2, 3])         # Global Average Pooling → [B, C]
+        # elif hasattr(self, 'proj') and hasattr(self, 'backbone'):
+        #     x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
+        #     with torch.no_grad():
+        #         # Forward through the entire Swin model up to the final head input
+        #         x = self.backbone.features(x)  # [B, H, W, C]
+        #         # print("Backbone output:", x.shape)
+        #         x = x.permute(0, 3, 1, 2) # [B, C, H, W]
+        #         x = x.mean(dim=[2, 3])         # Global Average Pooling → [B, C]
 
-            x = self.proj(x)  # → [B, 512]
+        #     x = self.proj(x)  # → [B, 512]
 
-            feature1 = x.view(x.size(0), 512, 1, 1).expand(-1, 512, 30, 40)
-            feature2 = torch.zeros_like(feature1)
-            return feature1, feature2
+        #     feature1 = x.view(x.size(0), 512, 1, 1).expand(-1, 512, 30, 40)
+        #     feature2 = torch.zeros_like(feature1)
+        #     return feature1, feature2
         elif self.backbone_name == 'efficientnet':
             feat1 = self.embedding1(x)
             feat2 = self.embedding2(feat1)
