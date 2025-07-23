@@ -90,16 +90,20 @@ class FeatureExtraction(nn.Module):
 
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
-            split_point = len(blocks) // 2
 
-            out_channels1 = get_last_conv_out_channels(blocks[:split_point])
-            out_channels2 = get_last_conv_out_channels(blocks[split_point:])
+            # Manual split for EfficientNet-B0 (ResNet-like)
+            embedding1_blocks = blocks[:6]   # Up to block index 5 (includes 40 channels)
+            embedding2_blocks = blocks[6:]   # From block index 6 (starts with 80 channels)
+
+            out_channels1 = get_last_conv_out_channels(embedding1_blocks)
+            out_channels2 = get_last_conv_out_channels(embedding2_blocks)
 
             print("out_channels1", out_channels1)
             print("out_channels2", out_channels2)
 
-            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(out_channels1, 512, 1))
-            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(out_channels2, 512, 1))
+            self.embedding1 = nn.Sequential(*embedding1_blocks, nn.Conv2d(out_channels1, 512, kernel_size=1))
+            self.embedding2 = nn.Sequential(*embedding2_blocks, nn.Conv2d(out_channels2, 512, kernel_size=1))
+
 
 
 
