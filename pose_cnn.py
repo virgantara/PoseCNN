@@ -229,7 +229,7 @@ class FeatureExtraction(nn.Module):
 
             return feature1, feature2
         else:
-            
+            print("Resnet:",x.shape)
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
             return feature1, feature2
