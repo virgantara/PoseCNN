@@ -144,6 +144,7 @@ class FeatureExtraction(nn.Module):
 
         elif backbone_name == 'convnext':
             blocks = list(pretrained_model.features.children())
+            split_point = len(blocks) // 2
             embedding1_blocks = blocks[:split_point]
             embedding2_blocks = blocks[split_point:]
 
@@ -152,7 +153,6 @@ class FeatureExtraction(nn.Module):
 
             self.embedding1 = nn.Sequential(*embedding1_blocks, nn.Conv2d(out_channels1, 512, 1))
             self.embedding2 = nn.Sequential(*embedding2_blocks, nn.Conv2d(out_channels2, 512, 1))
-
 
         else:
             raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
@@ -230,6 +230,10 @@ class FeatureExtraction(nn.Module):
 
             return feat1_proj, feat2_proj
 
+        elif self.backbone_name == 'convnext':
+            feature1 = self.embedding1(x)
+            feature2 = self.embedding2(feature1)
+            return feature1, feature2
         else:
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
