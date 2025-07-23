@@ -93,7 +93,9 @@ def main(args, io):
     if backbone_name == 'resnet18':
         input_dim = 128
     
-    posecnn_model = PoseCNN(pretrained_backbone = backbone_model,
+    posecnn_model = PoseCNN(
+                            backbone_name = backbone_name,
+                            pretrained_backbone = backbone_model,
                             input_dim = input_dim,
                            models_pcd = torch.tensor(train_dataset.models_pcd).to(DEVICE, dtype=torch.float32),
                            cam_intrinsic = train_dataset.cam_intrinsic).to(DEVICE)
@@ -167,6 +169,7 @@ def inference(args, device):
         input_dim = 128
     
     posecnn_model = PoseCNN(
+        backbone_name=backbone_name,
         pretrained_backbone=backbone_model,
         input_dim=input_dim,
         models_pcd=torch.tensor(test_dataset.models_pcd).to(device, dtype=torch.float32),

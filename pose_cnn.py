@@ -46,7 +46,7 @@ class FeatureExtraction(nn.Module):
     """
     Feature Embedding Module for PoseCNN. Using pretrained VGG16 network as backbone.
     """    
-    def __init__(self, pretrained_model):
+    def __init__(self, pretrained_model, backbone_name):
         super(FeatureExtraction, self).__init__()
         # embedding_layers = list(pretrained_model.features)[:30]
         # ## Embedding Module from begining till the first output feature map
@@ -57,7 +57,8 @@ class FeatureExtraction(nn.Module):
         # for i in [0, 2, 5, 7, 10, 12, 14]:
         #     self.embedding1[i].weight.requires_grad = False
         #     self.embedding1[i].bias.requires_grad = False
-        if isinstance(pretrained_model, VGG):
+        self.backbone_name = backbone_name
+        if backbone_name == 'vgg16':
             # VGG-like (e.g., VGG16)
             embedding_layers = list(pretrained_model.features)[:30]
             self.embedding1 = nn.Sequential(*embedding_layers[:23])
@@ -68,7 +69,7 @@ class FeatureExtraction(nn.Module):
                 self.embedding1[i].weight.requires_grad = False
                 self.embedding1[i].bias.requires_grad = False
 
-        elif isinstance(pretrained_model, models.ResNet):
+        elif backbone_name == 'resnet18' or backbone_name == 'resnet50':
             self.embedding1 = nn.Sequential(
                 pretrained_model.conv1,
                 pretrained_model.bn1,
@@ -93,7 +94,7 @@ class FeatureExtraction(nn.Module):
                     nn.Conv2d(resnet_out_channels, 128, kernel_size=1)  # force to 512
                 )
 
-        elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
+        elif backbone_name == 'efficientnet':
             blocks = list(pretrained_model.features.children())
 
             # Manual ResNet-like split for EfficientNet-B0
@@ -117,7 +118,7 @@ class FeatureExtraction(nn.Module):
 
 
 
-        elif isinstance(pretrained_model, VisionTransformer):
+        elif backbone_name == 'vit':
             self.vit = pretrained_model
             # Get the input dim to the classification head (usually 768)
             in_dim = self.vit.heads[0].in_features
@@ -129,7 +130,7 @@ class FeatureExtraction(nn.Module):
             self.proj = nn.Conv2d(in_dim, 512, kernel_size=1)
             self.embedding2 = nn.Identity()
 
-        elif 'swin' in pretrained_model.__class__.__name__.lower():
+        elif backbone_name == 'swin':
             self.backbone = pretrained_model  # torchvision.models.swin_*
             
             in_dim = self.backbone.head.in_features
@@ -143,7 +144,7 @@ class FeatureExtraction(nn.Module):
 
             self.embedding2 = nn.Identity()
 
-        elif 'convnext' in pretrained_model.__class__.__name__.lower():
+        elif backbone_name == 'convnext':
             blocks = list(pretrained_model.features.children())
             split_point = len(blocks) // 2
             self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(blocks[split_point - 1][-1].out_channels, 512, 1))
@@ -159,7 +160,7 @@ class FeatureExtraction(nn.Module):
         feature1: [bs, 512, H/8, W/8]
         feature2: [bs, 512, H/16, W/16]
         """
-        if hasattr(self, 'vit'):
+        if self.backbone_name == 'vit':
             B = x.size(0)
             x = nn.functional.interpolate(x, (224, 224))     # Resize to ViT input
             # x = self.vit._process_input(x)                   # Normalized input
@@ -182,7 +183,7 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
 
             return feature1, feature2
-        elif hasattr(self, 'backbone'):  # for swin
+        elif self.backbone_name == 'swin':  # for swin
             B = x.size(0)
             
             x = nn.functional.interpolate(x, size=(224, 224), mode='bilinear', align_corners=False)
@@ -218,7 +219,7 @@ class FeatureExtraction(nn.Module):
             feature1 = x.view(x.size(0), 512, 1, 1).expand(-1, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
-        elif hasattr(self, 'efficientnet'):
+        elif self.backbone_name == 'efficientnet':
             print("x:",x.shape)
             feature1 = self.embedding1(x)              # EfficientNet block 0–5
             feature1 = self.embedding1_proj(feature1)  # Project to 512
@@ -505,7 +506,7 @@ class PoseCNN(nn.Module):
     """
     PoseCNN
     """
-    def __init__(self, pretrained_backbone, input_dim, models_pcd, cam_intrinsic):
+    def __init__(self, backbone_name, pretrained_backbone, input_dim, models_pcd, cam_intrinsic):
         super(PoseCNN, self).__init__()
 
         self.iou_threshold = 0.7
@@ -531,7 +532,10 @@ class PoseCNN(nn.Module):
         # elif isinstance(pretrained_backbone, models.resnet50):
         #     self.input_dim = 2048
 
-        self.feature_extractor = FeatureExtraction(pretrained_model=pretrained_backbone)
+        self.feature_extractor = FeatureExtraction(
+            pretrained_model=pretrained_backbone,
+            backbone_name=backbone_name
+        )
         self.segmentation_branch = SegmentationBranch(input_dim=self.input_dim)
         self.RotationBranch = RotationBranch(feature_dim=self.input_dim)
         self.TranslationBranch = TranslationBranch(input_dim=self.input_dim)
