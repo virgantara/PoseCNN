@@ -96,19 +96,24 @@ class FeatureExtraction(nn.Module):
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
 
-            # Manual split for EfficientNet-B0 (ResNet-like)
-            embedding1_blocks = blocks[:6]   # Up to block index 5 (includes 40 channels)
-            embedding2_blocks = blocks[6:]   # From block index 6 (starts with 80 channels)
+            # Manual ResNet-like split for EfficientNet-B0
+            embedding1_blocks = blocks[:6]   # Up to block index 5 (usually ends with 112 channels)
+            embedding2_blocks = blocks[6:]   # From block 6 onward (ends with 1280 channels)
 
+            # Set EfficientNet feature extractors
+            self.embedding1 = nn.Sequential(*embedding1_blocks)
+            self.embedding2 = nn.Sequential(*embedding2_blocks)
+
+            # Get actual output channels from each stage
             out_channels1 = get_last_conv_out_channels(embedding1_blocks)
             out_channels2 = get_last_conv_out_channels(embedding2_blocks)
 
-            print("out_channels1", out_channels1)
-            print("out_channels2", out_channels2)
+            print("out_channels1", out_channels1)  # Expect 112
+            print("out_channels2", out_channels2)  # Expect 1280
 
-            self.embedding1 = nn.Sequential(*embedding1_blocks, nn.Conv2d(out_channels1, 512, kernel_size=1))
-            self.embedding2 = nn.Sequential(*embedding2_blocks, nn.Conv2d(out_channels2, 512, kernel_size=1))
-
+            # Projection layers (after embedding stages)
+            self.embedding1_proj = nn.Conv2d(out_channels1, 512, kernel_size=1)
+            self.embedding2_proj = nn.Conv2d(out_channels2, 512, kernel_size=1)
 
 
 
@@ -213,11 +218,19 @@ class FeatureExtraction(nn.Module):
             feature1 = x.view(x.size(0), 512, 1, 1).expand(-1, 512, 30, 40)
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
-        else:
+        elif hasattr(self, 'efficientnet'):
             print("x:",x.shape)
-            feature1 = self.embedding1(x)
-
+            feature1 = self.embedding1(x)              # EfficientNet block 0–5
+            feature1 = self.embedding1_proj(feature1)  # Project to 512
             print("feauture1:",feature1.shape)
+            
+            feature2 = self.embedding2(feature1)       # EfficientNet block 6–end
+            feature2 = self.embedding2_proj(feature2)  # Project to 512
+
+            return feature1, feature2
+        else:
+            
+            feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
             return feature1, feature2
 
