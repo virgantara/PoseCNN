@@ -538,6 +538,11 @@ class PoseCNN(nn.Module):
         self.segmentation_branch = SegmentationBranch(input_dim=self.input_dim)
         self.RotationBranch = RotationBranch(feature_dim=self.input_dim)
         self.TranslationBranch = TranslationBranch(input_dim=self.input_dim)
+
+        self.register_buffer('ewma_seg', torch.tensor(0.0))
+        self.register_buffer('ewma_trans', torch.tensor(0.0))
+        self.register_buffer('ewma_rot', torch.tensor(0.0))
+        self.ewma_alpha = 0.3
         ######################################################################
         #                            END OF YOUR CODE                        #
         ######################################################################
@@ -595,10 +600,14 @@ class PoseCNN(nn.Module):
             feat1, feat2 = self.feature_extractor(input_dict)
             probab, segmk , d_bbx = self.segmentation_branch(feat1, feat2)
             loss_dict["loss_segmentation"] = loss_cross_entropy(probab,input_dict['label'])
+            loss_seg = loss_dict["loss_segmentation"]
         
             trans = self.TranslationBranch(feat1, feat2)
             mae_loss = nn.L1Loss()
             loss_dict["loss_centermap"] = mae_loss(trans,input_dict['centermaps'])
+
+            loss_trans = loss_dict["loss_centermap"]
+            loss_rot = 0
 
             gt_bbx = gt_bbx.to(torch.float32)
             filter_bbx_R = IOUselection(d_bbx, gt_bbx, self.iou_threshold)
@@ -608,9 +617,29 @@ class PoseCNN(nn.Module):
                 pred_R, label = self.estimateRotation(quater , filter_bbx_R)  # pred_R , label
                 label = label.long()
                 loss_dict["loss_R"] = loss_Rotation(pred_R, gt_R, label, self.models_pcd)
+                loss_rot = loss_dict["loss_R"]
 
             else:
                 loss_dict["loss_R"] = 0
+
+            with torch.no_grad():
+                self.ewma_seg = self.ewma_alpha * loss_seg + (1 - self.ewma_alpha) * self.ewma_seg
+                self.ewma_trans = self.ewma_alpha * loss_trans + (1 - self.ewma_alpha) * self.ewma_seg
+                self.ewma_rot = self.ewma_alpha * loss_rot + (1 - self.ewma_alpha) * self.ewma_rot
+
+            sum_ewma = self.ewma_seg + self.ewma_trans + self.ewma_rot + 1e-8
+            w_seg = self.ewma_seg / sum_ewma
+            w_trans = self.ewma_trans / sum_ewma
+            w_rot = self.ewma_rot / sum_ewma
+
+            loss_total = w_seg * loss_seg + w_trans * loss_trans + w_rot * loss_rot
+
+            loss_dict = {
+                "loss_segmentation": w_seg.item(),
+                "loss_centermap": w_trans.item(),
+                "loss_R": w_rot.item(),
+                "loss_total": loss_total
+            }
 
 
             ######################################################################
