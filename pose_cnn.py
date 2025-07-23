@@ -101,6 +101,8 @@ class FeatureExtraction(nn.Module):
             embedding1_blocks = blocks[:6]   # Up to block index 5 (usually ends with 112 channels)
             embedding2_blocks = blocks[6:]   # From block 6 onward (ends with 1280 channels)
 
+            print("embedding1_blocks",embedding1_blocks.shape)
+            print("embedding2_blocks",embedding2_blocks.shape)
             # Set EfficientNet feature extractors
             self.embedding1 = nn.Sequential(*embedding1_blocks)
             self.embedding2 = nn.Sequential(*embedding2_blocks)
