@@ -116,9 +116,6 @@ class FeatureExtraction(nn.Module):
             # Projection layers (after embedding stages)
             self.embedding1_proj = nn.Conv2d(out_channels1, 512, kernel_size=1)
             self.embedding2_proj = nn.Conv2d(out_channels2, 512, kernel_size=1)
-
-
-
         elif backbone_name == 'vit':
             self.vit = pretrained_model
             # Get the input dim to the classification head (usually 768)
@@ -148,9 +145,8 @@ class FeatureExtraction(nn.Module):
         elif backbone_name == 'convnext':
             blocks = list(pretrained_model.features.children())
             split_point = len(blocks) // 2
-            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(blocks[split_point - 1][-1].out_channels, 512, 1))
-            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(blocks[-1][-1].out_channels, 512, 1))
-
+            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(384, 512, 1))
+            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(768, 512, 1))
 
         else:
             raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
