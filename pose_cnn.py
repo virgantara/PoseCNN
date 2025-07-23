@@ -26,6 +26,16 @@ def hello_pose_cnn():
     """
     print("Hello from pose_cnn.py!")
 
+def get_last_conv_out_channels(modules):
+    for layer in reversed(modules):
+        if isinstance(layer, nn.Conv2d):
+            return layer.out_channels
+        elif isinstance(layer, nn.Sequential):
+            for sublayer in reversed(layer):
+                if isinstance(sublayer, nn.Conv2d):
+                    return sublayer.out_channels
+    raise RuntimeError("No Conv2d layer found in EfficientNet features.")
+
 
 class FeatureExtraction(nn.Module):
     """
@@ -81,9 +91,14 @@ class FeatureExtraction(nn.Module):
         elif 'efficientnet' in pretrained_model.__class__.__name__.lower():
             blocks = list(pretrained_model.features.children())
             split_point = len(blocks) // 2
-            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(pretrained_model.features[split_point - 1][-1].out_channels, 512, 1))
-            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(pretrained_model.features[-1][-1].out_channels, 512, 1))
 
+            out_channels1 = get_last_conv_out_channels(blocks[:split_point])
+            out_channels2 = get_last_conv_out_channels(blocks[split_point:])
+
+            self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(out_channels1, 512, 1))
+            self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(out_channels2, 512, 1))
+
+            
 
         elif isinstance(pretrained_model, VisionTransformer):
             self.vit = pretrained_model
