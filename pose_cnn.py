@@ -101,7 +101,7 @@ class FeatureExtraction(nn.Module):
             embedding1_blocks = blocks[:6]   # Up to block index 5 (usually ends with 112 channels)
             embedding2_blocks = blocks[6:]   # From block 6 onward (ends with 1280 channels)
 
-            
+
             # Set EfficientNet feature extractors
             self.embedding1 = nn.Sequential(*embedding1_blocks)
             self.embedding2 = nn.Sequential(*embedding2_blocks)
@@ -222,9 +222,8 @@ class FeatureExtraction(nn.Module):
             return feature1, feature2
         elif self.backbone_name == 'efficientnet':
             feat1 = self.embedding1(x)
+            feat2 = self.embedding2(feat1)
             feat1_proj = self.embedding1_proj(feat1)
-
-            feat2 = self.embedding2(feat1_proj)
             feat2_proj = self.embedding2_proj(feat2)
 
             return feat1_proj, feat2_proj
