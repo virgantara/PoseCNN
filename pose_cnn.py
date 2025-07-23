@@ -143,16 +143,30 @@ class FeatureExtraction(nn.Module):
             self.embedding2 = nn.Identity()
 
         elif backbone_name == 'convnext':
-            blocks = list(pretrained_model.features.children())
-            split_point = len(blocks) // 2
-            embedding1_blocks = blocks[:split_point]
-            embedding2_blocks = blocks[split_point:]
+            blocks = list(pretrained_model.features.children())  # typical for torchvision ConvNeXt
 
-            out_channels1 = get_last_conv_out_channels(nn.Sequential(*embedding1_blocks))
-            out_channels2 = get_last_conv_out_channels(nn.Sequential(*embedding2_blocks))
+            # Example of manual split for ConvNeXt
+            # ConvNeXt-Tiny has 4 main stages (each a Sequential): 96, 192, 384, 768 channels
+            # Split after stage 2 → index 2 (up to 192 channels), continue from stage 3 (384, 768)
 
-            self.embedding1 = nn.Sequential(*embedding1_blocks, nn.Conv2d(out_channels1, 512, 1))
-            self.embedding2 = nn.Sequential(*embedding2_blocks, nn.Conv2d(out_channels2, 512, 1))
+            embedding1_blocks = blocks[:2]  # Stages 0 and 1 → up to 192 channels
+            embedding2_blocks = blocks[2:]  # Stages 2 and 3 → starts from 384 channels
+
+            # Wrap in nn.Sequential
+            self.embedding1 = nn.Sequential(*embedding1_blocks)
+            self.embedding2 = nn.Sequential(*embedding2_blocks)
+
+            # Get actual output channels
+            out_channels1 = get_last_conv_out_channels(self.embedding1)
+            out_channels2 = get_last_conv_out_channels(self.embedding2)
+
+            # Print for debugging (optional)
+            # print("ConvNeXt embedding1 out:", out_channels1)  # expect 192
+            # print("ConvNeXt embedding2 out:", out_channels2)  # expect 768
+
+            # Add projection conv to unify to 512 dims
+            self.embedding1_proj = nn.Conv2d(out_channels1, 512, kernel_size=1)
+            self.embedding2_proj = nn.Conv2d(out_channels2, 512, kernel_size=1)
 
         else:
             raise ValueError("Unsupported backbone architecture: {}".format(pretrained_model.__class__.__name__))
@@ -231,9 +245,12 @@ class FeatureExtraction(nn.Module):
             return feat1_proj, feat2_proj
 
         elif self.backbone_name == 'convnext':
-            feature1 = self.embedding1(x)
-            feature2 = self.embedding2(feature1)
-            return feature1, feature2
+            x1 = self.embedding1(x)           # [B, 192, H1, W1]
+            x2 = self.embedding2(x1)          # [B, 768, H2, W2]
+            x1_proj = self.embedding1_proj(x1)
+            x2_proj = self.embedding2_proj(x2)
+
+            return x1_proj, x2_proj
         else:
             feature1 = self.embedding1(x)
             feature2 = self.embedding2(feature1)
