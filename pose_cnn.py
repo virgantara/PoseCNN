@@ -95,10 +95,13 @@ class FeatureExtraction(nn.Module):
             out_channels1 = get_last_conv_out_channels(blocks[:split_point])
             out_channels2 = get_last_conv_out_channels(blocks[split_point:])
 
+            print("out_channels1", out_channels1.shape)
+            print("out_channels2", out_channels2.shape)
+
             self.embedding1 = nn.Sequential(*blocks[:split_point], nn.Conv2d(out_channels1, 512, 1))
             self.embedding2 = nn.Sequential(*blocks[split_point:], nn.Conv2d(out_channels2, 512, 1))
 
-            
+
 
         elif isinstance(pretrained_model, VisionTransformer):
             self.vit = pretrained_model
@@ -202,7 +205,10 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         else:
+            print("x:",x.shape)
             feature1 = self.embedding1(x)
+
+            print("feauture1:",feature1.shape)
             feature2 = self.embedding2(feature1)
             return feature1, feature2
 
