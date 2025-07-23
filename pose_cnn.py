@@ -101,8 +101,7 @@ class FeatureExtraction(nn.Module):
             embedding1_blocks = blocks[:6]   # Up to block index 5 (usually ends with 112 channels)
             embedding2_blocks = blocks[6:]   # From block 6 onward (ends with 1280 channels)
 
-            print("embedding1_blocks",embedding1_blocks.shape)
-            print("embedding2_blocks",embedding2_blocks.shape)
+            
             # Set EfficientNet feature extractors
             self.embedding1 = nn.Sequential(*embedding1_blocks)
             self.embedding2 = nn.Sequential(*embedding2_blocks)
@@ -111,8 +110,8 @@ class FeatureExtraction(nn.Module):
             out_channels1 = get_last_conv_out_channels(embedding1_blocks)
             out_channels2 = get_last_conv_out_channels(embedding2_blocks)
 
-            print("out_channels1", out_channels1)  # Expect 112
-            print("out_channels2", out_channels2)  # Expect 1280
+            # print("out_channels1", out_channels1)  # Expect 112
+            # print("out_channels2", out_channels2)  # Expect 1280
 
             # Projection layers (after embedding stages)
             self.embedding1_proj = nn.Conv2d(out_channels1, 512, kernel_size=1)
@@ -222,15 +221,14 @@ class FeatureExtraction(nn.Module):
             feature2 = torch.zeros_like(feature1)
             return feature1, feature2
         elif self.backbone_name == 'efficientnet':
-            print("x:",x.shape)
-            feature1 = self.embedding1(x)              # EfficientNet block 0–5
-            feature1 = self.embedding1_proj(feature1)  # Project to 512
-            print("feauture1:",feature1.shape)
-            
-            feature2 = self.embedding2(feature1)       # EfficientNet block 6–end
-            feature2 = self.embedding2_proj(feature2)  # Project to 512
+            feat1 = self.embedding1(x)
+            feat1_proj = self.embedding1_proj(feat1)
 
-            return feature1, feature2
+            feat2 = self.embedding2(feat1_proj)
+            feat2_proj = self.embedding2_proj(feat2)
+
+            return feat1_proj, feat2_proj
+
         else:
             print("Resnet:",x.shape)
             feature1 = self.embedding1(x)
