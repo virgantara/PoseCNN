@@ -26,15 +26,20 @@ def hello_pose_cnn():
     """
     print("Hello from pose_cnn.py!")
 
-def get_last_conv_out_channels(modules):
-    for layer in reversed(modules):
+def get_last_conv_out_channels(layers):
+    # Recursively search for last Conv2d
+    for layer in reversed(layers):
         if isinstance(layer, nn.Conv2d):
             return layer.out_channels
         elif isinstance(layer, nn.Sequential):
-            for sublayer in reversed(layer):
-                if isinstance(sublayer, nn.Conv2d):
-                    return sublayer.out_channels
-    raise RuntimeError("No Conv2d layer found in EfficientNet features.")
+            result = get_last_conv_out_channels(list(layer.children()))
+            if result is not None:
+                return result
+        elif hasattr(layer, 'children'):
+            result = get_last_conv_out_channels(list(layer.children()))
+            if result is not None:
+                return result
+    return None
 
 
 class FeatureExtraction(nn.Module):
