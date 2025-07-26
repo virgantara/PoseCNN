@@ -31,7 +31,7 @@ class PoseDataset(data.Dataset):
         self.real = []
         self.syn = []
         input_file = open(self.path)
-        while tqdm(1):
+        while (1):
             input_line = input_file.readline()
             if not input_line:
                 break
@@ -51,7 +51,7 @@ class PoseDataset(data.Dataset):
         class_file = open('./datautil/classes.txt')
         class_id = 1
         self.cld = {}
-        while tqdm(1):
+        while (1):
             class_input = class_file.readline()
             if not class_input:
                 break
