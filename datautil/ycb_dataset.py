@@ -105,6 +105,13 @@ class PoseDataset(data.Dataset):
         self.refine = refine
         self.front_num = 2
 
+        self.cam_intrinsic = np.array([
+            [self.cam_fx_2, 0.0, self.cam_cx_2],
+            [0.0, self.cam_fy_2, self.cam_cy_2],
+            [0.0, 0.0, 1.0]
+        ])
+
+
         print(len(self.list))
 
     def __getitem__(self, index):
