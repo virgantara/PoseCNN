@@ -77,7 +77,6 @@ class PoseDataset(data.Dataset):
                 pad = np.zeros((max_points - pts.shape[0], 3), dtype=np.float32)
                 pts = np.vstack((pts, pad))
 
-            print("Loading PCD",pts.shape)
             all_pcds.append(pts)
         self.models_pcd = np.stack(all_pcds)  # shape: [num_classes, max_points, 3]
 
