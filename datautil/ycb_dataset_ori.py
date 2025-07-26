@@ -8,21 +8,19 @@ import torchvision.transforms as transforms
 import argparse
 import time
 import random
-from lib.transformations import quaternion_from_euler, euler_matrix, random_quaternion, quaternion_matrix
 import numpy.ma as ma
 import copy
 import scipy.misc
 import scipy.io as scio
-# from skimage.segmentation import slic,mark_boundaries
 import cv2
 from tqdm import tqdm
 
 class PoseDataset(data.Dataset):
     def __init__(self, mode, num_pt, add_noise, root, noise_trans, refine):
         if mode == 'train':
-            self.path = './datasets/ycb/dataset_config/train_data_list.txt'
+            self.path = './train_data_list.txt'
         elif mode == 'test':
-            self.path = './datasets/ycb/dataset_config/test_data_list.txt'
+            self.path = './test_data_list.txt'
         self.num_pt = num_pt
         self.root = root
         # self.add_noise = add_noise
@@ -50,7 +48,7 @@ class PoseDataset(data.Dataset):
         self.len_real = len(self.real)
         self.len_syn = len(self.syn)
 
-        class_file = open('./datasets/ycb/dataset_config/classes.txt')
+        class_file = open('./classes.txt')
         class_id = 1
         self.cld = {}
         while tqdm(1):
@@ -98,7 +96,7 @@ class PoseDataset(data.Dataset):
         print(len(self.list))
 
     def __getitem__(self, index):
-        img = Image.open('{0}/{1}-color.png'.format(self.root, self.list[index]))
+        img = Image.open('{0}/{1}-color.jpg'.format(self.root, self.list[index]))
         depth = np.array(Image.open('{0}/{1}-depth.png'.format(self.root, self.list[index])))
         label = np.array(Image.open('{0}/{1}-label.png'.format(self.root, self.list[index])))
         # print("max", label.max(), "min", label.min())
