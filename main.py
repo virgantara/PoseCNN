@@ -121,7 +121,10 @@ def main(args, io):
         for batch in tqdm(train_loader, desc=f'Epoch {epoch+1} from {epochs}'):
             for item in batch:
                 batch[item] = batch[item].to(DEVICE)
+            
+            print('batch:',batch)
             loss_dict = posecnn_model(batch)
+
             optimizer.zero_grad()
             total_loss = 0
 

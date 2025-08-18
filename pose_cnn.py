@@ -80,7 +80,7 @@ class FeatureExtraction(nn.Module):
             )
 
             resnet_out_channels = pretrained_model.layer4[-1].conv1.in_channels  # 512 (resnet18) or 2048 (resnet50)
-
+            
             if resnet_out_channels == 2048:
                 self.embedding2 = nn.Sequential(
                     pretrained_model.layer3,
@@ -253,7 +253,9 @@ class FeatureExtraction(nn.Module):
             return x1_proj, x2_proj
         else:
             feature1 = self.embedding1(x)
+            # print('feature1:',feature1.shape)
             feature2 = self.embedding2(feature1)
+            # print('feature2:',feature2.shape)
             return feature1, feature2
 
 
@@ -616,6 +618,7 @@ class PoseCNN(nn.Module):
             # print(input_dict.size())
             feat1, feat2 = self.feature_extractor(input_dict)
             probab, segmk , d_bbx = self.segmentation_branch(feat1, feat2)
+
             loss_dict["loss_segmentation"] = loss_cross_entropy(probab,input_dict['label'])
         
             trans = self.TranslationBranch(feat1, feat2)

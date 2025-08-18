@@ -5,6 +5,7 @@ import os.path
 import torch
 import numpy as np
 import torchvision.transforms as transforms
+import torchvision.transforms.functional as F
 import argparse
 import time
 import random
@@ -254,14 +255,38 @@ class PoseDataset(data.Dataset):
         else:
             target = np.add(target, target_t)
 
+
+        target_size = (480, 640)  # (H, W)
+
+        print("img_masked",img_masked.shape)
+
+        # Resize semua input agar konsisten
+        # img_masked_resized = F.resize(torch.from_numpy(img_masked.transpose(2, 0, 1)).float(), target_size)
+        img_masked_resized = F.resize(torch.from_numpy(img_masked).float(), target_size)  # [3, H, W]
+        depth_resized = F.resize(torch.from_numpy(depth).unsqueeze(0).float(), target_size)  # [1, H, W]
+        label_resized = F.resize(torch.from_numpy(label).unsqueeze(0).float(), target_size, interpolation=F.InterpolationMode.NEAREST).squeeze(0).long()
+
+        # Normalisasi RGB (pastikan urutan channel sudah benar)
+        rgb_tensor = self.norm(img_masked_resized)
+
+        # input_dict = {
+        #     'rgb': self.norm(torch.from_numpy(img_masked.astype(np.float32))),             # [3, H, W] tensor, normalized
+        #     'depth': torch.from_numpy(depth.astype(np.float32)),           # [H, W] or [1, H, W] tensor (optional in current PoseCNN)
+        #     'label': torch.from_numpy(label.astype(np.int64)),           # [H, W] tensor for segmentation labels
+        #     'objs_id': torch.LongTensor(obj),         # [num_obj] tensor, class ids in the current frame
+        #     'bbx': self.extract_bbx_from_label(label, obj),
+        #     'RTs': torch.from_numpy(meta['poses'].transpose(2, 0, 1)),             # [num_class, 3, 4] or [num_obj, 3, 4], GT poses
+        #     'centermaps': self.generate_centermap(obj, meta, label)           # [3*num_classes, H, W] (as in your PoseCNN)
+        # }
+
         input_dict = {
-            'rgb': self.norm(torch.from_numpy(img_masked.astype(np.float32))),             # [3, H, W] tensor, normalized
-            'depth': torch.from_numpy(depth.astype(np.float32)),           # [H, W] or [1, H, W] tensor (optional in current PoseCNN)
-            'label': torch.from_numpy(label.astype(np.int64)),           # [H, W] tensor for segmentation labels
-            'objs_id': torch.LongTensor(obj),         # [num_obj] tensor, class ids in the current frame
-            'bbx': self.extract_bbx_from_label(label, obj),
-            'RTs': torch.from_numpy(meta['poses'].transpose(2, 0, 1)),             # [num_class, 3, 4] or [num_obj, 3, 4], GT poses
-            'centermaps': self.generate_centermap(obj, meta, label)           # [3*num_classes, H, W] (as in your PoseCNN)
+            'rgb': rgb_tensor,  # [3, 480, 640] tensor, normalized
+            'depth': depth_resized.squeeze(0),  # [480, 640], opsional
+            'label': label_resized,  # [480, 640] long tensor
+            'objs_id': torch.LongTensor(obj),  # [num_obj]
+            'bbx': self.extract_bbx_from_label(label_resized.numpy(), obj),
+            'RTs': torch.from_numpy(meta['poses'].transpose(2, 0, 1)),  # [num_obj, 3, 4]
+            'centermaps': self.generate_centermap(obj, meta, label_resized.numpy())  # [3*num_classes, 480, 640]
         }
 
         input_dict['rgb_full'] = torch.from_numpy(img_orig.transpose(2, 0, 1).astype(np.float32)) / 255.0
